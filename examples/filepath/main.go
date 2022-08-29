@@ -19,7 +19,7 @@ func main() {
 	}
 	filepath := os.Args[1]
 
-	output, err := pdftotext.Convert(filepath)
+	output, err := pdftotext.ConvertFilePath(filepath)
 	if err != nil {
 		panic(err)
 	}
