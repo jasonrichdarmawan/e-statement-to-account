@@ -25,6 +25,8 @@ func FindAllSubmatch(input []byte) (output [][][]byte, err error) {
 			continue
 		}
 
+		// TODO: Prove that removing matches[matchIndex][0] is better than leaving it alone.
+		// the regex used matches the entire line, func (*regexp.Regexp).FindAllSubmatch return it at index 0.
 		matches := regex.FindAllSubmatch(page[saldoIndex+7:], -1)
 		if matches == nil {
 			continue
