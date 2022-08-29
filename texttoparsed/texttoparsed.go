@@ -5,7 +5,7 @@ import (
 	"regexp"
 )
 
-func FindAll(input []byte) (output [][]byte, err error) {
+func FindAllSubmatch(input []byte) (output [][][]byte, err error) {
 	regex, err := regexp.Compile(`(?m)^(?: {2,}(?P<TANGGAL>[0-9]{2}/[0-9]{2}))?(?: {2,21}(?P<KETERANGAN1>[\w/:&.,()-]+(?: [\w/:&.,()-]+)*))?(?: {2,64}(?P<KETERANGAN2>[\w/:&.,()-]+(?: [\w/:&.,()-]+)*))?(?: {2,96}(?P<MUTASI>[\d,.]+(?: (?:DB|CR))*))?(?: {2,}(?P<SALDO>[\d,.]+))?$`)
 	if err != nil {
 		return nil, err
@@ -25,15 +25,49 @@ func FindAll(input []byte) (output [][]byte, err error) {
 			continue
 		}
 
-		matches := regex.FindAll(page[saldoIndex+7:], -1)
+		matches := regex.FindAllSubmatch(page[saldoIndex+7:], -1)
 		if matches == nil {
 			continue
 		}
-		for i := 0; i < len(matches); i++ {
+		for matchIndex := 0; matchIndex < len(matches); matchIndex++ {
 			// the regex matches empty line. So, remove it from the array.
-			if len(matches[i]) == 0 {
-				matches = append(matches[:i], matches[i+1:]...)
-				i--
+			if len(matches[matchIndex][0]) == 0 {
+				matches = append(matches[:matchIndex], matches[matchIndex+1:]...)
+				matchIndex--
+				continue
+			}
+
+			// if the Group DATE is empty then it is a subline of a transaction. So, append the matches to the previous element.
+			if len(matches[matchIndex][1]) == 0 {
+
+				// the subline of a transaction may continue on the next page. So, concatenate the matches to the output.
+				if matchIndex == 0 {
+					for submatchIndex, submatch := range matches[matchIndex] {
+						// submatchIndex == 0 because func (*regexp.Regexp).FindAllSubmatch(b []byte, n int) [][][]byte matches the line on index 0. So, ignore it.
+						// len(submatch) == 0 because the regex matches empty column. So, ignore it.
+						if submatchIndex == 0 || len(submatch) == 0 {
+							continue
+						}
+
+						transactionIndex := len(output) - 1
+						output[transactionIndex][submatchIndex] = append(output[transactionIndex][submatchIndex], []byte("\n")...)
+						output[transactionIndex][submatchIndex] = append(output[transactionIndex][submatchIndex], submatch...)
+					}
+				} else {
+					for submatchIndex, submatch := range matches[matchIndex] {
+						if submatchIndex == 0 || len(submatch) == 0 {
+							continue
+						}
+
+						transactionIndex := matchIndex - 1
+						matches[transactionIndex][submatchIndex] = append(matches[transactionIndex][submatchIndex], []byte("\n")...)
+						matches[transactionIndex][submatchIndex] = append(matches[transactionIndex][submatchIndex], submatch...)
+					}
+				}
+
+				matches = append(matches[:matchIndex], matches[matchIndex+1:]...)
+				matchIndex--
+				continue
 			}
 		}
 
