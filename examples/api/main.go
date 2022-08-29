@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/e-statement-to-t-account/pdftotext"
-	"github.com/e-statement-to-t-account/texttoparsed"
 	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/kidfrom/e-statement-to-t-account/pdftotext"
+	"github.com/kidfrom/e-statement-to-t-account/texttoparsed"
 )
 
 func e_statement_to_t_accountHandler(w http.ResponseWriter, r *http.Request) {

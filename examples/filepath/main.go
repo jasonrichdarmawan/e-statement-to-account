@@ -5,9 +5,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/e-statement-to-t-account/pdftotext"
-	"github.com/e-statement-to-t-account/texttoparsed"
 	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/kidfrom/e-statement-to-t-account/pdftotext"
+	"github.com/kidfrom/e-statement-to-t-account/texttoparsed"
 )
 
 func main() {
