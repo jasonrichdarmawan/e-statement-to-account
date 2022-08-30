@@ -40,27 +40,21 @@ func FindAllSubmatch(input []byte) (output [][][]byte, err error) {
 			}
 
 			// if the Group DATE is empty then it is a subline of a transaction. So, append the matches to the previous element.
-			if len(matches[matchIndex][1]) == 0 {
+			if len(matches[matchIndex][0]) != 0 && len(matches[matchIndex][1]) == 0 {
 
-				// the subline of a transaction may continue on the next page. So, concatenate the matches to the output.
-				if matchIndex == 0 {
-					for submatchIndex, submatch := range matches[matchIndex] {
-						// submatchIndex == 0 because func (*regexp.Regexp).FindAllSubmatch(b []byte, n int) [][][]byte matches the line on index 0. So, ignore it.
-						// len(submatch) == 0 because the regex matches empty column. So, ignore it.
-						if submatchIndex == 0 || len(submatch) == 0 {
-							continue
-						}
+				// a transaction may continue on the next page. So, concatenate the matches to the output.
+				for submatchIndex, submatch := range matches[matchIndex] {
+					// submatchIndex == 0 because func (*regexp.Regexp).FindAllSubmatch matches the line at index 0. So, ignore it.
+					// len(submatch) == 0 because the regex matches empty column. So, ignore it.
+					if submatchIndex == 0 || len(submatch) == 0 {
+						continue
+					}
 
+					if matchIndex == 0 {
 						transactionIndex := len(output) - 1
 						output[transactionIndex][submatchIndex] = append(output[transactionIndex][submatchIndex], []byte("\n")...)
 						output[transactionIndex][submatchIndex] = append(output[transactionIndex][submatchIndex], submatch...)
-					}
-				} else {
-					for submatchIndex, submatch := range matches[matchIndex] {
-						if submatchIndex == 0 || len(submatch) == 0 {
-							continue
-						}
-
+					} else {
 						transactionIndex := matchIndex - 1
 						matches[transactionIndex][submatchIndex] = append(matches[transactionIndex][submatchIndex], []byte("\n")...)
 						matches[transactionIndex][submatchIndex] = append(matches[transactionIndex][submatchIndex], submatch...)
