@@ -33,11 +33,11 @@ func main() {
 
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
-	t.AppendHeader(table.Row{"TANGGAL", "KETERANGAN1", "KETERANGAN2", "MUTASI", "SALDO"})
+	t.AppendHeader(table.Row{"TANGGAL", "KETERANGAN1", "KETERANGAN2", "CBG", "MUTASI", "SALDO"})
 	t.AppendSeparator()
 
 	for _, match := range matches {
-		t.AppendRow(table.Row{string(match[1]), string(match[2]), string(match[3]), string(match[4]), string(match[5])})
+		t.AppendRow(table.Row{string(match[1]), string(match[2]), string(match[3]), string(match[4]), string(match[5]), string(match[6])})
 	}
 
 	t.Render()

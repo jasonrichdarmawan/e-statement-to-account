@@ -6,7 +6,7 @@ import (
 )
 
 func FindAllSubmatch(input []byte) (output [][][]byte, err error) {
-	regex, err := regexp.Compile(`(?m)^(?: {2,}(?P<TANGGAL>[0-9]{2}/[0-9]{2}))?(?: {2,21}(?P<KETERANGAN1>[\w/:&.,()-]+(?: [\w/:&.,()-]+)*))?(?: {2,64}(?P<KETERANGAN2>[\w/:&.,()-]+(?: [\w/:&.,()-]+)*))?(?: {2,96}(?P<MUTASI>[\d,.]+(?: (?:DB|CR))*))?(?: {2,}(?P<SALDO>[\d,.]+))?$`)
+	regex, err := regexp.Compile(`(?m)^(?: {2,}(?P<TANGGAL>[0-9]{2}/[0-9]{2}))?(?: {2,21}(?P<KETERANGAN1>[\w/:&.,()-]+(?: [\w/:&.,()-]+)*))?(?: {2,64}(?P<KETERANGAN2>[\w/:&.,()-]+(?: [\w/:&.,()-]+)*))?(?: {2,}(?P<CBG>[0-9]{4}))?(?: {2,96}(?P<MUTASI>[\d,.]+(?: (?:DB|CR))*))?(?: {2,}(?P<SALDO>[\d,.]+))?$`)
 	if err != nil {
 		return nil, err
 	}
