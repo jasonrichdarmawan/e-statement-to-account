@@ -58,8 +58,7 @@ func Convert(matches [][][]byte) (*Accounts, error) {
 
 func determineAccountName(match [][]byte) (accountName []byte, description []byte) {
 	// keterangan2 can be empty. So, use keterangan1
-	keterangan2 := match[3]
-	if bytes.Equal(keterangan2, []byte("")) {
+	if bytes.Equal(match[3], []byte("")) {
 		re := regexp.MustCompile(`^(TARIKAN ATM|BIAYA ADM|BUNGA|PAJAK BUNGA|DR KOREKSI BUNGA)(?: [\d]{2}/[\d]{2})?$`)
 		keterangan1matches := re.FindSubmatch(match[2])
 		if len(keterangan1matches) < 2 {
@@ -70,28 +69,32 @@ func determineAccountName(match [][]byte) (accountName []byte, description []byt
 
 	// keterangan2's last line usually contains information about where the money went or came from.
 	// However, some transactions do not follow this format.
-	keterangan2split := bytes.Split(keterangan2, []byte("\n"))
 	re := regexp.MustCompile(`^(?:[0-9]+|MyBCA|(?:/)?M-BCA)$`)
+	keterangan2split := bytes.Split(match[3], []byte("\n"))
 	keterangan2lastline := keterangan2split[len(keterangan2split)-1]
 	if re.Match(keterangan2lastline) {
-		// (4) transactions with "BI-FAST"
+		// (5) transactions with "BI-FAST"
 		if bytes.Contains(match[2], []byte("BI-FAST")) {
-			return keterangan2split[len(keterangan2split)-2], keterangan2
+			return keterangan2split[len(keterangan2split)-2], match[3]
 		}
-		// (3) transactions with "KARTU DEBIT" too.
+		// (4) transactions with "KARTU DEBIT" too.
 		if bytes.Contains(match[2], []byte("KARTU DEBIT")) {
-			return keterangan2split[0], keterangan2
+			return keterangan2split[0], match[3]
 		}
-		// (2) transactions with QR
+		// (3) transactions with QR
 		if bytes.Contains(keterangan2split[0], []byte("QR")) {
-			return keterangan2split[4], keterangan2
+			return keterangan2split[4], match[3]
+		}
+		// (2) other transaction with only 1 line of description.
+		if len(keterangan2split) < 2 {
+			return match[2], match[3]
 		}
 		// (1) transactions with e-commerce and digital wallet do not follow this format.
-		return keterangan2split[1], keterangan2
+		return keterangan2split[1], match[3]
 	}
 
 	// The code above is a guard clause. So, get the last line as account name.
-	return keterangan2lastline, keterangan2
+	return keterangan2lastline, match[3]
 }
 
 func (a *Accounts) AccountIndex(name []byte) int {
