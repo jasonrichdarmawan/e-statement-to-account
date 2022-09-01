@@ -2,6 +2,7 @@ package parsedtoaccount
 
 import (
 	"bytes"
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -27,6 +28,8 @@ func Convert(matches [][][]byte) (*Accounts, error) {
 		if match[5] == nil {
 			continue
 		}
+
+		fmt.Println(string(match[5]))
 
 		accountName, description := determineAccountName(match)
 

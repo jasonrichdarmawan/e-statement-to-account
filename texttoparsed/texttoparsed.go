@@ -40,20 +40,6 @@ func FindAllSubmatch(input []byte) (transactions [][][]byte, err error) {
 				continue
 			}
 
-			// Hot fix:
-			// in some case, the regex incorrectly categorizes Group MUTASI as Group KETERANGAN2
-			// changing the quantifier for Group KETERANGAN2 will cause the regex to fail to categorize rows containing only Group KETERANGAN2
-			// the sample:
-			//       06/04          TARIKAN ATM 06/04                                                                        1,000,000.00 DB                         1,950,087.49
-			//       08/04          TRSF E-BANKING DB                0804/FTFVA/WS95031                                         70,000.00 DB                         1,880,087.49
-			//                                                       12208/SHOPEEPAY
-			//                                                       -
-			//                                                       -
-			//                                                       118751555
-			if keterangan2matches := reMutasi.FindSubmatch(matches[matchIndex][3]); keterangan2matches != nil {
-				matches[matchIndex] = append(matches[matchIndex][:3], []byte(""), []byte(""), keterangan2matches[1], keterangan2matches[2], matches[matchIndex][5])
-			}
-
 			// if the Group DATE is empty then it is a subline of a transaction. So, append the matches to the previous element.
 			if len(matches[matchIndex][1]) == 0 {
 
@@ -83,6 +69,20 @@ func FindAllSubmatch(input []byte) (transactions [][][]byte, err error) {
 
 			// if group DATE is not empty then modify the Group DATE
 			matches[matchIndex][1] = append(matches[matchIndex][1], append([]byte("/"), year...)...)
+
+			// Hot fix:
+			// in some case, the regex incorrectly categorizes Group MUTASI as Group KETERANGAN2
+			// changing the quantifier for Group KETERANGAN2 will cause the regex to fail to categorize rows containing only Group KETERANGAN2
+			// the sample:
+			//       06/04          TARIKAN ATM 06/04                                                                        1,000,000.00 DB                         1,950,087.49
+			//       08/04          TRSF E-BANKING DB                0804/FTFVA/WS95031                                         70,000.00 DB                         1,880,087.49
+			//                                                       12208/SHOPEEPAY
+			//                                                       -
+			//                                                       -
+			//                                                       118751555
+			if keterangan2matches := reMutasi.FindSubmatch(matches[matchIndex][3]); keterangan2matches != nil {
+				matches[matchIndex] = append(matches[matchIndex][:3], []byte(""), []byte(""), keterangan2matches[1], keterangan2matches[2], matches[matchIndex][5])
+			}
 		}
 
 		transactions = append(transactions, matches...)
