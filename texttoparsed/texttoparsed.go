@@ -2,16 +2,26 @@ package texttoparsed
 
 import (
 	"bytes"
+	"errors"
 	"regexp"
+	"strconv"
+	"strings"
 )
 
-func FindAllSubmatch(input []byte) (transactions [][][]byte, err error) {
-	reTransaction := regexp.MustCompile(`(?m)^(?: {2,}(?P<TANGGAL>[0-9]{2}/[0-9]{2}))?(?: {2,21}(?P<KETERANGAN1>[\w/:&.,()-]+(?: [\w/:&.,()-]+)*))?(?: {2,73}(?P<KETERANGAN2>[\w/:&.,()'-]+(?: {1,4}[\w/:&.,()'-]+)*))?(?: {2,}(?P<CBG>[0-9]{4}))?(?: {2,96}(?P<MUTASI>[\d,.]+)?(?: (?P<ENTRY>DB))?)?(?: {2,}(?P<SALDO>[\d,.]+))?$`)
+type TransactionMatches struct {
+	Transactions         [][][]byte
+	TotalMutasi          float64
+	NumberOfTransactions int
+}
+
+func FindAllSubmatch(input []byte) (transactionMatches TransactionMatches, err error) {
+	reTransaction := regexp.MustCompile(`(?m)^(?: {2,}(?P<TANGGAL>[0-9]{2}/[0-9]{2}))?(?: {2,21}(?P<KETERANGAN1>[\w/:&.,()-]+(?: [\w/:&.,()-]+)*))?(?: {2,73}(?P<KETERANGAN2>[\w/:&.,()'-]+(?: {1,4}[\w/:&.,()'-]+)*))?(?: {2,}(?P<CBG>[0-9]{4}))?(?: {2,98}(?P<MUTASI>[\d,.]+)?(?: (?P<ENTRY>DB))?)?(?: {2,}(?P<SALDO>[\d,.]+))?$`)
 	reYear := regexp.MustCompile(`(?m)^(?: {2,})PERIODE(?: {2,}: {2,})[A-Z]+ ([0-9]{4})$`)
 	reMutasi := regexp.MustCompile(`^([\d,]+\.\d+)(?: (DB))?$`)
+	reTotalMutasi := regexp.MustCompile(`(?m)^ {2,}(MUTASI CR|MUTASI DB) {2,}: {2,}([\d,.]+) {2,}(\d+)$`)
 
 	pages := bytes.Split(input, []byte("\x0C"))
-	for _, page := range pages {
+	for i, page := range pages {
 		// bytes.Split slices into subslices separated by the separator.
 		// hellohello  -> len: 2 output: [hello,hello]
 		// hellohello -> len: 3 output: [hello,hello,]
@@ -52,9 +62,9 @@ func FindAllSubmatch(input []byte) (transactions [][][]byte, err error) {
 
 					// a transaction may continue on the next page. So, concatenate the matches to the output.
 					if matchIndex == 0 {
-						transactionIndex := len(transactions) - 1
-						transactions[transactionIndex][submatchIndex] = append(transactions[transactionIndex][submatchIndex], []byte("\n")...)
-						transactions[transactionIndex][submatchIndex] = append(transactions[transactionIndex][submatchIndex], submatch...)
+						transactionIndex := len(transactionMatches.Transactions) - 1
+						transactionMatches.Transactions[transactionIndex][submatchIndex] = append(transactionMatches.Transactions[transactionIndex][submatchIndex], []byte("\n")...)
+						transactionMatches.Transactions[transactionIndex][submatchIndex] = append(transactionMatches.Transactions[transactionIndex][submatchIndex], submatch...)
 					} else {
 						transactionIndex := matchIndex - 1
 						matches[transactionIndex][submatchIndex] = append(matches[transactionIndex][submatchIndex], []byte("\n")...)
@@ -85,8 +95,35 @@ func FindAllSubmatch(input []byte) (transactions [][][]byte, err error) {
 			}
 		}
 
-		transactions = append(transactions, matches...)
+		transactionMatches.Transactions = append(transactionMatches.Transactions, matches...)
+
+		// get the balance. So, we can do automatic check whether the parser has bug or not.
+		if i == len(pages)-2 {
+			totalMutasiMatches := reTotalMutasi.FindAllSubmatch(page[saldoIndex+7:], -1)
+			for _, totalMutasiMatch := range totalMutasiMatches {
+				numberOfTransactions, err := strconv.Atoi(string(totalMutasiMatch[3]))
+				if err != nil {
+					return TransactionMatches{}, err
+				}
+				transactionMatches.NumberOfTransactions += numberOfTransactions
+
+				mutasi, err := strconv.ParseFloat(strings.ReplaceAll(string(totalMutasiMatch[2]), ",", ""), 64)
+				if err != nil {
+					return TransactionMatches{}, err
+				}
+				if bytes.Equal(totalMutasiMatch[1], []byte("MUTASI CR")) {
+					transactionMatches.TotalMutasi += mutasi
+				} else if bytes.Equal(totalMutasiMatch[1], []byte("MUTASI DB")) {
+					transactionMatches.TotalMutasi -= mutasi
+				}
+			}
+
+			// check whether number of transactions match.
+			if len(transactionMatches.Transactions)-1 != transactionMatches.NumberOfTransactions {
+				return TransactionMatches{}, errors.New("the number of parsed transactions does not match the summary from the file")
+			}
+		}
 	}
 
-	return transactions, nil
+	return transactionMatches, nil
 }

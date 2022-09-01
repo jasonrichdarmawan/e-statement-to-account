@@ -30,7 +30,7 @@ func e_statement_to_t_accountHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 	}
 
-	var transactions [][][]byte
+	var transactions texttoparsed.TransactionMatches
 
 	r.ParseMultipartForm(1000000)
 	filesHeader := r.MultipartForm.File["e-statement"]
@@ -64,7 +64,9 @@ func e_statement_to_t_accountHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		transactions = append(transactions, matches...)
+		transactions.Transactions = append(transactions.Transactions, matches.Transactions...)
+		transactions.NumberOfTransactions += matches.NumberOfTransactions
+		transactions.TotalMutasi += matches.TotalMutasi
 	}
 
 	// RenderPDF(transactions, w)

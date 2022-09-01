@@ -2,10 +2,13 @@ package parsedtoaccount
 
 import (
 	"bytes"
-	"fmt"
+	"errors"
+	"math"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/kidfrom/e-statement-to-account/texttoparsed"
 )
 
 type Transaction struct {
@@ -20,16 +23,15 @@ type Accounts struct {
 	balances     []float64
 }
 
-func Convert(matches [][][]byte) (*Accounts, error) {
-	accounts := Accounts{}
+func Convert(matches texttoparsed.TransactionMatches) (*Accounts, error) {
+	var totalMutasi float64
+	var accounts Accounts
 
-	for _, match := range matches {
+	for _, match := range matches.Transactions {
 		// If Group MUTASI then ignore.
 		if match[5] == nil {
 			continue
 		}
-
-		fmt.Println(string(match[5]))
 
 		accountName, description := determineAccountName(match)
 
@@ -51,12 +53,25 @@ func Convert(matches [][][]byte) (*Accounts, error) {
 
 		if bytes.Equal(match[6], []byte("DB")) {
 			accounts.balances[accountIndex] -= mutasi
+			totalMutasi -= mutasi
 		} else {
 			accounts.balances[accountIndex] += mutasi
+			totalMutasi += mutasi
 		}
 	}
 
+	// check whether total mutasi match.
+	// TODO: handle money with int instead of float64.
+	if !almostEqual(matches.TotalMutasi, totalMutasi) {
+		return nil, errors.New("the parsed total mutasi does not match the summary from the file")
+	}
+
 	return &accounts, nil
+}
+
+func almostEqual(a, b float64) bool {
+	// 9e3 == 0.009; assumption 0.987 - 0.984 = 0.003
+	return math.Abs(a-b) <= 9e-3
 }
 
 func determineAccountName(match [][]byte) (accountName []byte, description []byte) {
