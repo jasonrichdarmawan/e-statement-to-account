@@ -61,7 +61,11 @@ func determineAccountName(match [][]byte) (accountName []byte, description []byt
 	keterangan2 := match[3]
 	if bytes.Equal(keterangan2, []byte("")) {
 		re := regexp.MustCompile(`^(TARIKAN ATM|BIAYA ADM|BUNGA|PAJAK BUNGA|DR KOREKSI BUNGA)(?: [\d]{2}/[\d]{2})?$`)
-		return re.FindSubmatch(match[2])[1], match[2]
+		keterangan1matches := re.FindSubmatch(match[2])
+		if len(keterangan1matches) < 2 {
+			return match[2], match[2]
+		}
+		return keterangan1matches[1], match[2]
 	}
 
 	// keterangan2's last line usually contains information about where the money went or came from.
