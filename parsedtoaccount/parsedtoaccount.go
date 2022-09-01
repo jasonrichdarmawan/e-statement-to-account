@@ -2,6 +2,7 @@ package parsedtoaccount
 
 import (
 	"bytes"
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -67,7 +68,7 @@ func determineAccountName(match [][]byte) (accountName []byte, description []byt
 	// keterangan2's last line usually contains information about where the money went or came from.
 	// However, some transactions do not follow this format.
 	keterangan2split := bytes.Split(keterangan2, []byte("\n"))
-	re := regexp.MustCompile(`^([0-9]+|MyBCA|M-BCA)$`)
+	re := regexp.MustCompile(`^(?:[0-9]+|MyBCA|(?:/)?M-BCA)$`)
 	keterangan2lastline := keterangan2split[len(keterangan2split)-1]
 	if re.Match(keterangan2lastline) {
 		// (3) transactions with "BI-FAST"
@@ -81,6 +82,8 @@ func determineAccountName(match [][]byte) (accountName []byte, description []byt
 		// (1) transactions with e-commerce and digital wallet do not follow this format.
 		return keterangan2split[1], keterangan2
 	}
+
+	fmt.Println(string(keterangan2lastline))
 
 	// The code above is a guard clause. So, get the last line as account name.
 	return keterangan2lastline, keterangan2
