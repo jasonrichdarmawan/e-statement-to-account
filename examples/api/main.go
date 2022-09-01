@@ -74,6 +74,8 @@ func e_statement_to_t_accountHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
+	// RenderAccounts(accounts, w)
+
 	RenderSummary(accounts, w)
 }
 
@@ -103,6 +105,25 @@ func RenderPDF(transactions [][][]byte, writer io.Writer) {
 		t.AppendRow(table.Row{string(transaction[1]), string(transaction[2]), string(transaction[3]), string(transaction[4]), string(transaction[5]), string(transaction[6]), string(transaction[7])})
 	}
 	t.Render()
+}
+
+func RenderAccounts(accounts *parsedtoaccount.Accounts, writer io.Writer) {
+	t := table.NewWriter()
+	t.SetOutputMirror(writer)
+	t.AppendHeader(table.Row{"TANGGAL", "KETERANGAN", "MUTASI"})
+	t.AppendSeparator()
+	p := message.NewPrinter(language.English)
+	for _, accountName := range accounts.AccountNames() {
+		t.SetTitle(string(accountName))
+		t.ResetRows()
+		t.ResetFooters()
+		accountIndex := accounts.AccountIndex(accountName)
+		for _, transaction := range accounts.Transactions()[accountIndex] {
+			t.AppendRow(table.Row{string(transaction[0]), string(transaction[1]), string(transaction[2])})
+		}
+		t.AppendFooter(table.Row{"", "Total", p.Sprintf("%.2f", accounts.Balances()[accountIndex])})
+		t.Render()
+	}
 }
 
 func RenderSummary(accounts *parsedtoaccount.Accounts, writer io.Writer) {
