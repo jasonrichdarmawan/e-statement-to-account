@@ -64,10 +64,10 @@ func FindAllSubmatch(input []byte) (transactions [][][]byte, err error) {
 				matches = append(matches[:matchIndex], matches[matchIndex+1:]...)
 				matchIndex--
 				continue
-			} else {
-				// modify the Group DATE
-				matches[matchIndex][1] = append(matches[matchIndex][1], append([]byte("/"), year...)...)
 			}
+
+			// if group DATE is not empty then modify the Group DATE
+			matches[matchIndex][1] = append(matches[matchIndex][1], append([]byte("/"), year...)...)
 		}
 
 		transactions = append(transactions, matches...)
