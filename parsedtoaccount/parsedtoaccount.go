@@ -60,7 +60,7 @@ func determineAccountName(match [][]byte) (accountName []byte, description []byt
 	// keterangan2 can be empty. So, use keterangan1
 	keterangan2 := match[3]
 	if bytes.Equal(keterangan2, []byte("")) {
-		re := regexp.MustCompile(`^(TARIKAN ATM|BIAYA ADM|BUNGA|PAJAK BUNGA)(?: [\d]{2}/[\d]{2})?$`)
+		re := regexp.MustCompile(`^(TARIKAN ATM|BIAYA ADM|BUNGA|PAJAK BUNGA|DR KOREKSI BUNGA)(?: [\d]{2}/[\d]{2})?$`)
 		return re.FindSubmatch(match[2])[1], match[2]
 	}
 
