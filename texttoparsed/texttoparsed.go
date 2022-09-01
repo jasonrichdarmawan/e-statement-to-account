@@ -8,6 +8,7 @@ import (
 func FindAllSubmatch(input []byte) (transactions [][][]byte, err error) {
 	reTransaction := regexp.MustCompile(`(?m)^(?: {2,}(?P<TANGGAL>[0-9]{2}/[0-9]{2}))?(?: {2,21}(?P<KETERANGAN1>[\w/:&.,()-]+(?: [\w/:&.,()-]+)*))?(?: {2,73}(?P<KETERANGAN2>[\w/:&.,()'-]+(?: {1,4}[\w/:&.,()'-]+)*))?(?: {2,}(?P<CBG>[0-9]{4}))?(?: {2,96}(?P<MUTASI>[\d,.]+)?(?: (?P<ENTRY>DB))?)?(?: {2,}(?P<SALDO>[\d,.]+))?$`)
 	reYear := regexp.MustCompile(`(?m)^(?: {2,})PERIODE(?: {2,}: {2,})[A-Z]+ ([0-9]{4})$`)
+	reMutasi := regexp.MustCompile(`^([\d,]+\.\d+)(?: (DB))?$`)
 
 	pages := bytes.Split(input, []byte("\x0C"))
 	for _, page := range pages {
@@ -37,6 +38,20 @@ func FindAllSubmatch(input []byte) (transactions [][][]byte, err error) {
 				matches = append(matches[:matchIndex], matches[matchIndex+1:]...)
 				matchIndex--
 				continue
+			}
+
+			// Hot fix:
+			// in some case, the regex incorrectly categorizes Group MUTASI as Group KETERANGAN2
+			// changing the quantifier for Group KETERANGAN2 will cause the regex to fail to categorize rows containing only Group KETERANGAN2
+			// the sample:
+			//       06/04          TARIKAN ATM 06/04                                                                        1,000,000.00 DB                         1,950,087.49
+			//       08/04          TRSF E-BANKING DB                0804/FTFVA/WS95031                                         70,000.00 DB                         1,880,087.49
+			//                                                       12208/SHOPEEPAY
+			//                                                       -
+			//                                                       -
+			//                                                       118751555
+			if keterangan2matches := reMutasi.FindSubmatch(matches[matchIndex][3]); keterangan2matches != nil {
+				matches[matchIndex] = append(matches[matchIndex][:3], []byte(""), []byte(""), keterangan2matches[1], keterangan2matches[2], matches[matchIndex][5])
 			}
 
 			// if the Group DATE is empty then it is a subline of a transaction. So, append the matches to the previous element.
