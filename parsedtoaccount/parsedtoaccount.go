@@ -23,11 +23,11 @@ type Accounts struct {
 	balances     []float64
 }
 
-func Convert(matches texttoparsed.TransactionMatches) (*Accounts, error) {
+func Convert(matches texttoparsed.TextToParsed) (*Accounts, error) {
 	var totalMutasi float64
 	var accounts Accounts
 
-	for _, match := range matches.Transactions {
+	for _, match := range matches.ParsedTransactions {
 		// If Group MUTASI then ignore.
 		if match[5] == nil {
 			continue
@@ -62,7 +62,7 @@ func Convert(matches texttoparsed.TransactionMatches) (*Accounts, error) {
 
 	// check whether total mutasi match.
 	// TODO: handle money with int instead of float64.
-	if !almostEqual(matches.TotalMutasi, totalMutasi) {
+	if !almostEqual(matches.TotalMutasiFromFile, totalMutasi) {
 		return nil, errors.New("the parsed total mutasi does not match the summary from the file")
 	}
 

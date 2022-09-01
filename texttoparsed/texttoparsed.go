@@ -8,13 +8,13 @@ import (
 	"strings"
 )
 
-type TransactionMatches struct {
-	Transactions         [][][]byte
-	TotalMutasi          float64
-	NumberOfTransactions int
+type TextToParsed struct {
+	ParsedTransactions           [][][]byte
+	TotalMutasiFromFile          float64
+	NumberOfTransactionsFromFile int
 }
 
-func FindAllSubmatch(input []byte) (transactionMatches TransactionMatches, err error) {
+func FindAllSubmatch(input []byte) (output TextToParsed, err error) {
 	reTransaction := regexp.MustCompile(`(?m)^(?: {2,}(?P<TANGGAL>[0-9]{2}/[0-9]{2}))?(?: {2,21}(?P<KETERANGAN1>[\w/:&.,()-]+(?: [\w/:&.,()-]+)*))?(?: {2,73}(?P<KETERANGAN2>[\w/:&.,()'-]+(?: {1,4}[\w/:&.,()'-]+)*))?(?: {2,}(?P<CBG>[0-9]{4}))?(?: {2,98}(?P<MUTASI>[\d,.]+)?(?: (?P<ENTRY>DB))?)?(?: {2,}(?P<SALDO>[\d,.]+))?$`)
 	reYear := regexp.MustCompile(`(?m)^(?: {2,})PERIODE(?: {2,}: {2,})[A-Z]+ ([0-9]{4})$`)
 	reMutasi := regexp.MustCompile(`^([\d,]+\.\d+)(?: (DB))?$`)
@@ -62,9 +62,9 @@ func FindAllSubmatch(input []byte) (transactionMatches TransactionMatches, err e
 
 					// a transaction may continue on the next page. So, concatenate the matches to the output.
 					if matchIndex == 0 {
-						transactionIndex := len(transactionMatches.Transactions) - 1
-						transactionMatches.Transactions[transactionIndex][submatchIndex] = append(transactionMatches.Transactions[transactionIndex][submatchIndex], []byte("\n")...)
-						transactionMatches.Transactions[transactionIndex][submatchIndex] = append(transactionMatches.Transactions[transactionIndex][submatchIndex], submatch...)
+						transactionIndex := len(output.ParsedTransactions) - 1
+						output.ParsedTransactions[transactionIndex][submatchIndex] = append(output.ParsedTransactions[transactionIndex][submatchIndex], []byte("\n")...)
+						output.ParsedTransactions[transactionIndex][submatchIndex] = append(output.ParsedTransactions[transactionIndex][submatchIndex], submatch...)
 					} else {
 						transactionIndex := matchIndex - 1
 						matches[transactionIndex][submatchIndex] = append(matches[transactionIndex][submatchIndex], []byte("\n")...)
@@ -95,7 +95,7 @@ func FindAllSubmatch(input []byte) (transactionMatches TransactionMatches, err e
 			}
 		}
 
-		transactionMatches.Transactions = append(transactionMatches.Transactions, matches...)
+		output.ParsedTransactions = append(output.ParsedTransactions, matches...)
 
 		// get the balance. So, we can do automatic check whether the parser has bug or not.
 		if i == len(pages)-2 {
@@ -103,27 +103,27 @@ func FindAllSubmatch(input []byte) (transactionMatches TransactionMatches, err e
 			for _, totalMutasiMatch := range totalMutasiMatches {
 				numberOfTransactions, err := strconv.Atoi(string(totalMutasiMatch[3]))
 				if err != nil {
-					return TransactionMatches{}, err
+					return TextToParsed{}, err
 				}
-				transactionMatches.NumberOfTransactions += numberOfTransactions
+				output.NumberOfTransactionsFromFile += numberOfTransactions
 
 				mutasi, err := strconv.ParseFloat(strings.ReplaceAll(string(totalMutasiMatch[2]), ",", ""), 64)
 				if err != nil {
-					return TransactionMatches{}, err
+					return TextToParsed{}, err
 				}
 				if bytes.Equal(totalMutasiMatch[1], []byte("MUTASI CR")) {
-					transactionMatches.TotalMutasi += mutasi
+					output.TotalMutasiFromFile += mutasi
 				} else if bytes.Equal(totalMutasiMatch[1], []byte("MUTASI DB")) {
-					transactionMatches.TotalMutasi -= mutasi
+					output.TotalMutasiFromFile -= mutasi
 				}
 			}
 
 			// check whether number of transactions match.
-			if len(transactionMatches.Transactions)-1 != transactionMatches.NumberOfTransactions {
-				return TransactionMatches{}, errors.New("the number of parsed transactions does not match the summary from the file")
+			if len(output.ParsedTransactions)-1 != output.NumberOfTransactionsFromFile {
+				return TextToParsed{}, errors.New("the number of parsed transactions does not match the summary from the file")
 			}
 		}
 	}
 
-	return transactionMatches, nil
+	return output, nil
 }
