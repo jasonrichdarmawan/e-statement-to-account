@@ -67,7 +67,7 @@ func determineAccountName(match [][]byte) (accountName []byte, description []byt
 	// keterangan2's last line usually contains information about where the money went or came from.
 	// However, some transactions do not follow this format.
 	keterangan2split := bytes.Split(keterangan2, []byte("\n"))
-	re := regexp.MustCompile(`^([0-9]+|MyBCA)$`)
+	re := regexp.MustCompile(`^([0-9]+|MyBCA|M-BCA)$`)
 	keterangan2lastline := keterangan2split[len(keterangan2split)-1]
 	if re.Match(keterangan2lastline) {
 		// (3) transactions with "BI-FAST"
