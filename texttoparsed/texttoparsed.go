@@ -6,8 +6,8 @@ import (
 )
 
 func FindAllSubmatch(input []byte) (transactions [][][]byte, err error) {
-	regexTransaction := regexp.MustCompile(`(?m)^(?: {2,}(?P<TANGGAL>[0-9]{2}/[0-9]{2}))?(?: {2,21}(?P<KETERANGAN1>[\w/:&.,()-]+(?: [\w/:&.,()-]+)*))?(?: {2,73}(?P<KETERANGAN2>[\w/:&.,()'-]+(?: {1,4}[\w/:&.,()'-]+)*))?(?: {2,}(?P<CBG>[0-9]{4}))?(?: {2,96}(?P<MUTASI>[\d,.]+)?(?: (?P<ENTRY>DB))?)?(?: {2,}(?P<SALDO>[\d,.]+))?$`)
-	yearRegex := regexp.MustCompile(`(?m)^(?: {2,})PERIODE(?: {2,}: {2,})[A-Z]+ ([0-9]{4})$`)
+	reTransaction := regexp.MustCompile(`(?m)^(?: {2,}(?P<TANGGAL>[0-9]{2}/[0-9]{2}))?(?: {2,21}(?P<KETERANGAN1>[\w/:&.,()-]+(?: [\w/:&.,()-]+)*))?(?: {2,73}(?P<KETERANGAN2>[\w/:&.,()'-]+(?: {1,4}[\w/:&.,()'-]+)*))?(?: {2,}(?P<CBG>[0-9]{4}))?(?: {2,96}(?P<MUTASI>[\d,.]+)?(?: (?P<ENTRY>DB))?)?(?: {2,}(?P<SALDO>[\d,.]+))?$`)
+	reYear := regexp.MustCompile(`(?m)^(?: {2,})PERIODE(?: {2,}: {2,})[A-Z]+ ([0-9]{4})$`)
 
 	pages := bytes.Split(input, []byte("\x0C"))
 	for _, page := range pages {
@@ -23,11 +23,11 @@ func FindAllSubmatch(input []byte) (transactions [][][]byte, err error) {
 			continue
 		}
 
-		year := yearRegex.FindSubmatch(pages[0][:saldoIndex])[1]
+		year := reYear.FindSubmatch(pages[0][:saldoIndex])[1]
 
 		// TODO: Prove that removing matches[matchIndex][0] is better than leaving it alone.
 		// the regex used matches the entire line, func (*regexp.Regexp).FindAllSubmatch return it at index 0.
-		matches := regexTransaction.FindAllSubmatch(page[saldoIndex+7:], -1)
+		matches := reTransaction.FindAllSubmatch(page[saldoIndex+7:], -1)
 		if matches == nil {
 			continue
 		}
