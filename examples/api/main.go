@@ -74,7 +74,7 @@ func e_statement_to_t_accountHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	// RenderAccounts(accounts, w)
+	RenderAccounts(accounts, w)
 
 	RenderSummary(accounts, w)
 }
