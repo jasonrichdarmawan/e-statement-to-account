@@ -18,7 +18,7 @@ import (
 )
 
 func main() {
-	http.HandleFunc("/e-statement-to-t-account", e_statement_to_t_accountHandler)
+	http.HandleFunc("/e-statement-to-account", e_statement_to_t_accountHandler)
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
 		fmt.Println(err)
