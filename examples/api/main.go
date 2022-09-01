@@ -6,9 +6,9 @@ import (
 	"net/http"
 
 	"github.com/jedib0t/go-pretty/v6/table"
-	"github.com/kidfrom/e-statement-to-t-account/parsedtoaccount"
-	"github.com/kidfrom/e-statement-to-t-account/pdftotext"
-	"github.com/kidfrom/e-statement-to-t-account/texttoparsed"
+	"github.com/kidfrom/e-statement-to-account/parsedtoaccount"
+	"github.com/kidfrom/e-statement-to-account/pdftotext"
+	"github.com/kidfrom/e-statement-to-account/texttoparsed"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 )
