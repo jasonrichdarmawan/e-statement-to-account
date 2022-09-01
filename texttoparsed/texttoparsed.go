@@ -5,8 +5,8 @@ import (
 	"regexp"
 )
 
-func FindAllSubmatch(input []byte) (output [][][]byte, err error) {
-	regex, err := regexp.Compile(`(?m)^(?: {2,}(?P<TANGGAL>[0-9]{2}/[0-9]{2}))?(?: {2,21}(?P<KETERANGAN1>[\w/:&.,()-]+(?: [\w/:&.,()-]+)*))?(?: {2,64}(?P<KETERANGAN2>[\w/:&.,()-]+(?: [\w/:&.,()-]+)*))?(?: {2,}(?P<CBG>[0-9]{4}))?(?: {2,96}(?P<MUTASI>[\d,.]+(?: (?:DB|CR))*))?(?: {2,}(?P<SALDO>[\d,.]+))?$`)
+func FindAllSubmatch(input []byte) (transactions [][][]byte, err error) {
+	regex, err := regexp.Compile(`(?m)^(?: {2,}(?P<TANGGAL>[0-9]{2}/[0-9]{2}))?(?: {2,21}(?P<KETERANGAN1>[\w/:&.,()-]+(?: [\w/:&.,()-]+)*))?(?: {2,64}(?P<KETERANGAN2>[\w/:&.,()-]+(?: [\w/:&.,()-]+)*))?(?: {2,}(?P<CBG>[0-9]{4}))?(?: {2,96}(?P<MUTASI>[\d,.]+)?(?: (?P<ENTRY>DB))?)?(?: {2,}(?P<SALDO>[\d,.]+))?$`)
 	if err != nil {
 		return nil, err
 	}
@@ -51,9 +51,9 @@ func FindAllSubmatch(input []byte) (output [][][]byte, err error) {
 
 					// a transaction may continue on the next page. So, concatenate the matches to the output.
 					if matchIndex == 0 {
-						transactionIndex := len(output) - 1
-						output[transactionIndex][submatchIndex] = append(output[transactionIndex][submatchIndex], []byte("\n")...)
-						output[transactionIndex][submatchIndex] = append(output[transactionIndex][submatchIndex], submatch...)
+						transactionIndex := len(transactions) - 1
+						transactions[transactionIndex][submatchIndex] = append(transactions[transactionIndex][submatchIndex], []byte("\n")...)
+						transactions[transactionIndex][submatchIndex] = append(transactions[transactionIndex][submatchIndex], submatch...)
 					} else {
 						transactionIndex := matchIndex - 1
 						matches[transactionIndex][submatchIndex] = append(matches[transactionIndex][submatchIndex], []byte("\n")...)
@@ -67,8 +67,8 @@ func FindAllSubmatch(input []byte) (output [][][]byte, err error) {
 			}
 		}
 
-		output = append(output, matches...)
+		transactions = append(transactions, matches...)
 	}
 
-	return output, nil
+	return transactions, nil
 }

@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 
 	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/kidfrom/e-statement-to-t-account/parsedtoaccount"
 	"github.com/kidfrom/e-statement-to-t-account/pdftotext"
 	"github.com/kidfrom/e-statement-to-t-account/texttoparsed"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 )
 
 func e_statement_to_t_accountHandler(w http.ResponseWriter, r *http.Request) {
@@ -43,22 +45,35 @@ func e_statement_to_t_accountHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	matches, err := texttoparsed.FindAllSubmatch(output)
+	transactions, err := texttoparsed.FindAllSubmatch(output)
 	if err != nil {
 		fmt.Println(err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
-	t := table.NewWriter()
-	t.SetOutputMirror(os.Stdout)
-	t.AppendHeader(table.Row{"TANGGAL", "KETERANGAN1", "KETERANGAN2", "MUTASI", "SALDO"})
-	t.AppendSeparator()
-
-	for _, match := range matches {
-		t.AppendRow(table.Row{string(match[1]), string(match[2]), string(match[3]), string(match[4]), string(match[5])})
+	accounts, err := parsedtoaccount.Convert(transactions)
+	if err != nil {
+		panic(err)
 	}
 
+	RenderSummary(accounts, w)
+}
+
+func RenderSummary(accounts *parsedtoaccount.Accounts, writer io.Writer) {
+	t := table.NewWriter()
+	t.SetOutputMirror(writer)
+	t.AppendHeader(table.Row{"ACCOUNT", "BALANCE"})
+	t.AppendSeparator()
+	p := message.NewPrinter(language.English)
+	total := 0.00
+	for _, accountName := range accounts.AccountNames() {
+		accountIndex := accounts.AccountIndex(accountName)
+		balance := accounts.Balances()[accountIndex]
+		t.AppendRow(table.Row{string(accountName), p.Sprintf("%.2f", accounts.Balances()[accountIndex])})
+		total -= balance
+	}
+	t.AppendFooter(table.Row{"Total", p.Sprintf("%.2f", total)})
 	t.Render()
 }
 
