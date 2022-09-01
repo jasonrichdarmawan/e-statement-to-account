@@ -116,7 +116,7 @@ func RenderSummary(accounts *parsedtoaccount.Accounts, writer io.Writer) {
 		accountIndex := accounts.AccountIndex(accountName)
 		balance := accounts.Balances()[accountIndex]
 		t.AppendRow(table.Row{string(accountName), p.Sprintf("%.2f", accounts.Balances()[accountIndex])})
-		total -= balance
+		total += balance
 	}
 	t.AppendFooter(table.Row{"Total", p.Sprintf("%.2f", total)})
 	t.Render()
