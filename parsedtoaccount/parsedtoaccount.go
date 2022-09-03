@@ -2,7 +2,7 @@ package parsedtoaccount
 
 import (
 	"bytes"
-	"errors"
+	"fmt"
 	"math"
 	"regexp"
 	"strconv"
@@ -17,11 +17,11 @@ type Accounts struct {
 	balances     []float64
 }
 
-func Convert(matches *texttoparsed.TextToParsed) (*Accounts, error) {
+func Convert(t *texttoparsed.TextToParsed) (*Accounts, error) {
 	var mutasiAmount float64 = 0
 	var accounts Accounts = Accounts{}
 
-	for _, match := range matches.Transactions {
+	for _, match := range t.Transactions {
 		// If Group MUTASI is empty then ignore.
 		if match[5] == nil {
 			continue
@@ -55,8 +55,8 @@ func Convert(matches *texttoparsed.TextToParsed) (*Accounts, error) {
 
 	// check whether total mutasi match.
 	// TODO: handle money with int instead of float64.
-	if !almostEqual(matches.MutasiAmount, mutasiAmount) {
-		return nil, errors.New("the parsed total mutasi does not match the summary from the file")
+	if !almostEqual(t.MutasiAmount, mutasiAmount) {
+		return nil, fmt.Errorf(`the parsed total mutasi does not match the summary from the file with period %v`, string(t.Period))
 	}
 
 	return &accounts, nil
@@ -67,6 +67,7 @@ func almostEqual(a, b float64) bool {
 }
 
 var keterangan1Regex = regexp.MustCompile(`^(TARIKAN ATM|BIAYA ADM|BUNGA|PAJAK BUNGA|DR KOREKSI BUNGA)(?: [\d]{2}/[\d]{2})?$`)
+var keterangan2Regex = regexp.MustCompile(`^(?:[0-9]+|MyBCA|M-BCA|/[A-Za-z- ]+)$`)
 
 func determineAccountName(match [][]byte) (accountName []byte, description []byte) {
 	// keterangan2 can be empty. So, use keterangan1
@@ -80,10 +81,9 @@ func determineAccountName(match [][]byte) (accountName []byte, description []byt
 
 	// keterangan2's last line usually contains information about where the money went or came from.
 	// However, some transactions do not follow this format.
-	re := regexp.MustCompile(`^(?:[0-9]+|MyBCA|M-BCA|/[A-Za-z- ]+)$`)
 	keterangan2Split := bytes.Split(match[3], []byte("\n"))
 	keterangan2LastLine := keterangan2Split[len(keterangan2Split)-1]
-	if re.Match(keterangan2LastLine) {
+	if keterangan2Regex.Match(keterangan2LastLine) {
 		// (7) transactions with "FLAZZ BCA"
 		if bytes.Contains(match[2], []byte("FLAZZ BCA")) {
 			keterangan1Split := bytes.Split(match[2], []byte("\n"))

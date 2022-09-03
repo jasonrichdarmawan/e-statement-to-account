@@ -10,81 +10,88 @@ import (
 )
 
 type TextToParsed struct {
+	Text                 []byte
 	Transactions         [][][]byte
 	MutasiAmount         float64
 	NumberOfTransactions int
+	Period               []byte
 }
 
-func Parse(text *[]byte) (output *TextToParsed, err error) {
-	output = &TextToParsed{}
+func Parse(text *[]byte) (*TextToParsed, error) {
+	t := TextToParsed{}
+	t.Text = *text
 
-	mutasiAmount, numberOfTransactions, err := findSummaryMatches(text)
+	err := t.findSummaryMatches()
 	if err != nil {
 		return nil, err
 	}
-	output.MutasiAmount = mutasiAmount
-	output.NumberOfTransactions = numberOfTransactions
 
-	transactionMatches, err := findTransactionMatches(text)
+	err = t.findTransactionMatches()
 	if err != nil {
 		return nil, err
 	}
-	output.Transactions = transactionMatches
 
 	// check whether number of transactions match.
-	if len(output.Transactions)-1 != output.NumberOfTransactions {
-		return nil, errors.New("the number of parsed transactions does not match the summary from the file")
+	if len(t.Transactions)-1 != t.NumberOfTransactions {
+		return nil, fmt.Errorf(`the number of parsed transactions does not match the summary from the file with period %v`, string(t.Period))
 	}
 
-	return output, nil
+	return &t, nil
 }
 
 var summaryRegex = regexp.MustCompile(`(?m)^ {2,}(MUTASI CR|MUTASI DB) {2,}: {2,}([\d,.]+) {2,}(\d+)$`)
 
-func findSummaryMatches(text *[]byte) (mutasiAmount float64, numberOfTransactions int, err error) {
+func (output *TextToParsed) findSummaryMatches() error {
 	// // get the balance. So, we can do automatic check whether the parser has bug or not.
-	matches := summaryRegex.FindAllSubmatch(*text, -1)
+	matches := summaryRegex.FindAllSubmatch(output.Text, -1)
 	if matches == nil {
-		return 0, 0, errors.New("no matching mutasi found")
+		return errors.New("no matching mutasi found")
 	}
 	for _, match := range matches {
 		n, err := strconv.Atoi(string(match[3]))
 		if err != nil {
-			return 0, 0, err
+			return err
 		}
-		numberOfTransactions += n
+		output.NumberOfTransactions += n
 
 		mutasi, err := strconv.ParseFloat(strings.ReplaceAll(string(match[2]), ",", ""), 64)
 		if err != nil {
-			return 0, 0, err
+			return err
 		}
 		if bytes.Equal(match[1], []byte("MUTASI CR")) {
-			mutasiAmount += mutasi
+			output.MutasiAmount += mutasi
 		} else if bytes.Equal(match[1], []byte("MUTASI DB")) {
-			mutasiAmount -= mutasi
+			output.MutasiAmount -= mutasi
 		}
 	}
 
-	return mutasiAmount, numberOfTransactions, nil
+	return nil
 }
 
-var yearRegexp = regexp.MustCompile(`(?m)^ {2,}PERIODE {2,}: {2,}[A-Z]{3,9} ([0-9]{4})$`)
-var transactionRegex = regexp.MustCompile(`(?m)^(?: {2,}(?P<TANGGAL>[0-9]{2}/[0-9]{2}))?(?: {2,21}(?P<KETERANGAN1>[\w/:&.,()-]+(?: [\w/:&.,()-]+)*))?(?: {2,73}(?P<KETERANGAN2>[\w/:&.,()'-]+(?: {1,4}[\w/:&.,()'-]+)*))?(?: {2,}(?P<CBG>[0-9]{4}))?(?: {2,98}(?P<MUTASI>[\d,.]+)?(?: (?P<ENTRY>DB))?)?(?: {2,}(?P<SALDO>[\d,.]+))?$`)
+var periodRegexp = regexp.MustCompile(`(?m)^ {2,}PERIODE {2,}: {2,}([A-Z]{3,9}) ([0-9]{4})$`)
+var transactionRegex = regexp.MustCompile("(?m)^" +
+	"(?: {2,}(?P<TANGGAL>[0-9]{2}/[0-9]{2}))?" +
+	"(?: {2,21}(?P<KETERANGAN1>[\\w/:&.,()-]+(?: [\\w/:&.,()-]+)*))?" +
+	"(?: {2,73}(?P<KETERANGAN2>[\\w/:&.,()'-]+(?: {1,4}[\\w/:&.,()'-]+)*))?" +
+	"(?: {2,}(?P<CBG>[0-9]{4}))?" +
+	"(?: {2,98}(?P<MUTASI>[\\d,.]+)?(?: (?P<ENTRY>DB))?)?" +
+	"(?: {2,}(?P<SALDO>[\\d,.]+))?$")
 
-func findTransactionMatches(text *[]byte) ([][][]byte, error) {
-	year := yearRegexp.FindSubmatch(*text)
-	if year == nil {
-		return nil, errors.New("no match year found")
+func (t *TextToParsed) findTransactionMatches() error {
+	period := periodRegexp.FindSubmatch(t.Text)
+	if period == nil {
+		return errors.New("no match year found")
 	}
+	t.Period = append(period[1], append([]byte(" "), period[2]...)...)
 
-	output, err := removePageHeader(text)
+	err := t.removePageHeader()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	matches := transactionRegex.FindAllSubmatch(output, -1)
+	matches := transactionRegex.FindAllSubmatch(t.Text, -1)
 	if matches == nil {
-		return nil, errors.New("no match transactions found")
+		return errors.New("no match transactions found")
 	}
 	// index from range can't be modified e.g with index--. So, use for loop.
 	for matchIndex := 0; matchIndex < len(matches); matchIndex++ {
@@ -118,18 +125,21 @@ func findTransactionMatches(text *[]byte) ([][][]byte, error) {
 			continue
 		} else {
 			// if group DATE is not empty then modify the Group DATE
-			(*match)[1] = append((*match)[1], append([]byte("/"), year[1]...)...)
+			(*match)[1] = append((*match)[1], append([]byte("/"), period[2]...)...)
 		}
 
 		fixTransactionRegexIncorrectlyCategorizingGroupMutasiAsGroupKeterangan2(match)
 	}
 
-	return matches, nil
+	t.Transactions = matches
+
+	return nil
 }
 
-func removePageHeader(text *[]byte) (output []byte, err error) {
+func (t *TextToParsed) removePageHeader() (err error) {
 	// pdftotext sinsert page break between pages
-	pages := bytes.Split(*text, []byte("\x0C"))
+	pages := bytes.Split(t.Text, []byte("\x0C"))
+	t.Text = nil
 
 	// bytes.Split slices into subslices separated by the separator.
 	// hellohello  -> len: 2 output: [hello,hello]
@@ -139,13 +149,13 @@ func removePageHeader(text *[]byte) (output []byte, err error) {
 		// the regex for transaction is not designed to match the entire text. So, remove it.
 		saldoIndex := bytes.Index(page, []byte("SALDO\n\n"))
 		if saldoIndex == -1 {
-			return nil, fmt.Errorf(`page %v does not have table`, pageIndex+1)
+			return fmt.Errorf(`page %v does not have table`, pageIndex+1)
 		}
 
-		output = append(output, page[saldoIndex+7:]...)
+		t.Text = append(t.Text, page[saldoIndex+7:]...)
 	}
 
-	return output, nil
+	return nil
 }
 
 var mutasiColumnRegex = regexp.MustCompile(`^([\d,]+\.\d+)(?: (DB))?$`)

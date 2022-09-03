@@ -56,7 +56,7 @@ func parseMultipartForm(w http.ResponseWriter, r *http.Request) {
 	for _, fileHeader := range filesHeader {
 		file, err := fileHeader.Open()
 		if err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		// a defer statement defers the execution of a function
@@ -65,22 +65,23 @@ func parseMultipartForm(w http.ResponseWriter, r *http.Request) {
 
 		data, err := io.ReadAll(file)
 		if err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		text, err := pdftotext.ConvertStdin(data)
 		if err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		matches, err := texttoparsed.Parse(text)
 		if err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
+		transactions.Period = matches.Period
 		transactions.Transactions = append(transactions.Transactions, matches.Transactions...)
 		transactions.NumberOfTransactions += matches.NumberOfTransactions
 		transactions.MutasiAmount += matches.MutasiAmount
@@ -90,7 +91,7 @@ func parseMultipartForm(w http.ResponseWriter, r *http.Request) {
 
 	accounts, err := parsedtoaccount.Convert(&transactions)
 	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
