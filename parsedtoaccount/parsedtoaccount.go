@@ -11,12 +11,6 @@ import (
 	"github.com/kidfrom/e-statement-to-account/texttoparsed"
 )
 
-type Transaction struct {
-	Date        []byte
-	Description []byte
-	Mutasi      float64
-}
-
 type Accounts struct {
 	accountNames [][]byte
 	transactions [][][][]byte

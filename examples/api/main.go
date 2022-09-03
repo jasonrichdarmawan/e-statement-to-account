@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"html/template"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -18,21 +19,36 @@ import (
 )
 
 func main() {
-	http.HandleFunc("/e-statement-to-account", e_statement_to_t_accountHandler)
+	http.HandleFunc("/e-statement-to-account", parserHandler)
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
 		fmt.Println(err)
 	}
 }
 
-func e_statement_to_t_accountHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
+var t = template.Must(template.ParseFiles("examples/api/public/upload.html"))
+
+func displayPage(wr http.ResponseWriter, page string, data interface{}) {
+	t.ExecuteTemplate(wr, page+".html", data)
+}
+
+func parserHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "GET":
+		displayPage(w, "upload", nil)
+	case "POST":
+		parseMultipartForm(w, r)
+	default:
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 	}
+}
 
+func parseMultipartForm(w http.ResponseWriter, r *http.Request) {
 	var transactions texttoparsed.TextToParsed
 
+	// Parse the request body as multipart/form-data
 	r.ParseMultipartForm(1000000)
+
 	filesHeader := r.MultipartForm.File["e-statement"]
 	sort.Sort(ByDate(filesHeader))
 	for _, fileHeader := range filesHeader {
@@ -42,6 +58,9 @@ func e_statement_to_t_accountHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
+		// a defer statement defers the execution of a function
+		// until the surrounding function returns.
+		defer file.Close()
 
 		data, err := io.ReadAll(file)
 		if err != nil {
