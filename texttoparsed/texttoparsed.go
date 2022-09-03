@@ -41,9 +41,9 @@ func Parse(text *[]byte) (*TextToParsed, error) {
 
 var summaryRegex = regexp.MustCompile(`(?m)^ {2,}(MUTASI CR|MUTASI DB) {2,}: {2,}([\d,.]+) {2,}(\d+)$`)
 
-func (output *TextToParsed) findSummaryMatches() error {
+func (t *TextToParsed) findSummaryMatches() error {
 	// get the summary of mutasi. So, we can do automatic checking whether the parser has bugs or not.
-	matches := summaryRegex.FindAllSubmatch(output.Text, -1)
+	matches := summaryRegex.FindAllSubmatch(t.Text, -1)
 	if matches == nil {
 		return errors.New("no matching mutasi found")
 	}
@@ -52,16 +52,16 @@ func (output *TextToParsed) findSummaryMatches() error {
 		if err != nil {
 			return err
 		}
-		output.NumberOfTransactions += n
+		t.NumberOfTransactions += n
 
 		mutasi, err := strconv.ParseFloat(strings.ReplaceAll(string(match[2]), ",", ""), 64)
 		if err != nil {
 			return err
 		}
 		if bytes.Equal(match[1], []byte("MUTASI CR")) {
-			output.MutasiAmount += mutasi
+			t.MutasiAmount += mutasi
 		} else if bytes.Equal(match[1], []byte("MUTASI DB")) {
-			output.MutasiAmount -= mutasi
+			t.MutasiAmount -= mutasi
 		}
 	}
 
