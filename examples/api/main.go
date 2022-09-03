@@ -23,6 +23,7 @@ func main() {
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
 }
 
@@ -40,11 +41,12 @@ func parserHandler(w http.ResponseWriter, r *http.Request) {
 		parseMultipartForm(w, r)
 	default:
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
 	}
 }
 
 func parseMultipartForm(w http.ResponseWriter, r *http.Request) {
-	var transactions texttoparsed.TextToParsed
+	var transactions texttoparsed.TextToParsed = texttoparsed.TextToParsed{}
 
 	// Parse the request body as multipart/form-data
 	r.ParseMultipartForm(1000000)
@@ -54,7 +56,6 @@ func parseMultipartForm(w http.ResponseWriter, r *http.Request) {
 	for _, fileHeader := range filesHeader {
 		file, err := fileHeader.Open()
 		if err != nil {
-			fmt.Println(err)
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
@@ -64,35 +65,33 @@ func parseMultipartForm(w http.ResponseWriter, r *http.Request) {
 
 		data, err := io.ReadAll(file)
 		if err != nil {
-			fmt.Println(err)
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
 
-		output, err := pdftotext.ConvertStdin(data)
+		text, err := pdftotext.ConvertStdin(data)
 		if err != nil {
-			fmt.Println(err)
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
 
-		matches, err := texttoparsed.FindAllSubmatch(output)
+		matches, err := texttoparsed.Parse(text)
 		if err != nil {
-			fmt.Println(err)
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
 
-		transactions.ParsedTransactions = append(transactions.ParsedTransactions, matches.ParsedTransactions...)
-		transactions.NumberOfTransactionsFromFile += matches.NumberOfTransactionsFromFile
-		transactions.TotalMutasiFromFile += matches.TotalMutasiFromFile
+		transactions.Transactions = append(transactions.Transactions, matches.Transactions...)
+		transactions.NumberOfTransactions += matches.NumberOfTransactions
+		transactions.MutasiAmount += matches.MutasiAmount
 	}
 
 	// RenderPDF(transactions, w)
 
-	accounts, err := parsedtoaccount.Convert(transactions)
+	accounts, err := parsedtoaccount.Convert(&transactions)
 	if err != nil {
-		panic(err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
 	}
 
 	RenderAccounts(accounts, w)

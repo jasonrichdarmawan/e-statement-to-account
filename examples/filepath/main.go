@@ -27,7 +27,7 @@ func main() {
 		panic(err)
 	}
 
-	transactions, err := texttoparsed.FindAllSubmatch(output)
+	transactions, err := texttoparsed.Parse(output)
 	if err != nil {
 		panic(err)
 	}

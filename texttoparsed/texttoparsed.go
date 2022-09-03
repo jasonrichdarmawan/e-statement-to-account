@@ -3,127 +3,166 @@ package texttoparsed
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
 )
 
 type TextToParsed struct {
-	ParsedTransactions           [][][]byte
-	TotalMutasiFromFile          float64
-	NumberOfTransactionsFromFile int
+	Transactions         [][][]byte
+	MutasiAmount         float64
+	NumberOfTransactions int
 }
 
-func FindAllSubmatch(input []byte) (output TextToParsed, err error) {
-	reTransaction := regexp.MustCompile(`(?m)^(?: {2,}(?P<TANGGAL>[0-9]{2}/[0-9]{2}))?(?: {2,21}(?P<KETERANGAN1>[\w/:&.,()-]+(?: [\w/:&.,()-]+)*))?(?: {2,73}(?P<KETERANGAN2>[\w/:&.,()'-]+(?: {1,4}[\w/:&.,()'-]+)*))?(?: {2,}(?P<CBG>[0-9]{4}))?(?: {2,98}(?P<MUTASI>[\d,.]+)?(?: (?P<ENTRY>DB))?)?(?: {2,}(?P<SALDO>[\d,.]+))?$`)
-	reYear := regexp.MustCompile(`(?m)^(?: {2,})PERIODE(?: {2,}: {2,})[A-Z]+ ([0-9]{4})$`)
-	reMutasi := regexp.MustCompile(`^([\d,]+\.\d+)(?: (DB))?$`)
-	reTotalMutasi := regexp.MustCompile(`(?m)^ {2,}(MUTASI CR|MUTASI DB) {2,}: {2,}([\d,.]+) {2,}(\d+)$`)
+func Parse(text *[]byte) (output *TextToParsed, err error) {
+	output = &TextToParsed{}
 
-	pages := bytes.Split(input, []byte("\x0C"))
-	for i, page := range pages {
-		// bytes.Split slices into subslices separated by the separator.
-		// hellohello  -> len: 2 output: [hello,hello]
-		// hellohello -> len: 3 output: [hello,hello,]
-		if len(page) == 0 {
-			continue
-		}
+	mutasiAmount, numberOfTransactions, err := findSummaryMatches(text)
+	if err != nil {
+		return nil, err
+	}
+	output.MutasiAmount = mutasiAmount
+	output.NumberOfTransactions = numberOfTransactions
 
-		saldoIndex := bytes.Index(page, []byte("SALDO\n\n"))
-		if saldoIndex == -1 {
-			continue
-		}
+	transactionMatches, err := findTransactionMatches(text)
+	if err != nil {
+		return nil, err
+	}
+	output.Transactions = transactionMatches
 
-		year := reYear.FindSubmatch(pages[0][:saldoIndex])[1]
-
-		// TODO: Prove that removing matches[matchIndex][0] is better than leaving it alone.
-		// the regex used matches the entire line, func (*regexp.Regexp).FindAllSubmatch return it at index 0.
-		matches := reTransaction.FindAllSubmatch(page[saldoIndex+7:], -1)
-		if matches == nil {
-			continue
-		}
-		for matchIndex := 0; matchIndex < len(matches); matchIndex++ {
-			// the regex matches empty line. So, remove it from the array.
-			if len(matches[matchIndex][0]) == 0 {
-				matches = append(matches[:matchIndex], matches[matchIndex+1:]...)
-				matchIndex--
-				continue
-			}
-
-			// if the Group DATE is empty then it is a subline of a transaction. So, append the matches to the previous element.
-			if len(matches[matchIndex][1]) == 0 {
-
-				for submatchIndex, submatch := range matches[matchIndex] {
-					// submatchIndex == 0 because func (*regexp.Regexp).FindAllSubmatch matches the line at index 0. So, ignore it.
-					// len(submatch) == 0 because the regex matches empty column. So, ignore it.
-					if submatchIndex == 0 || len(submatch) == 0 {
-						continue
-					}
-
-					// a transaction may continue on the next page. So, concatenate the matches to the output.
-					if matchIndex == 0 {
-						transactionIndex := len(output.ParsedTransactions) - 1
-						output.ParsedTransactions[transactionIndex][submatchIndex] = append(output.ParsedTransactions[transactionIndex][submatchIndex], []byte("\n")...)
-						output.ParsedTransactions[transactionIndex][submatchIndex] = append(output.ParsedTransactions[transactionIndex][submatchIndex], submatch...)
-					} else {
-						transactionIndex := matchIndex - 1
-						matches[transactionIndex][submatchIndex] = append(matches[transactionIndex][submatchIndex], []byte("\n")...)
-						matches[transactionIndex][submatchIndex] = append(matches[transactionIndex][submatchIndex], submatch...)
-					}
-				}
-
-				matches = append(matches[:matchIndex], matches[matchIndex+1:]...)
-				matchIndex--
-				continue
-			}
-
-			// if group DATE is not empty then modify the Group DATE
-			matches[matchIndex][1] = append(matches[matchIndex][1], append([]byte("/"), year...)...)
-
-			// Hot fix:
-			// in some case, the regex incorrectly categorizes Group MUTASI as Group KETERANGAN2
-			// changing the quantifier for Group KETERANGAN2 will cause the regex to fail to categorize rows containing only Group KETERANGAN2
-			// the sample:
-			//       06/04          TARIKAN ATM 06/04                                                                        1,000,000.00 DB                         1,950,087.49
-			//       08/04          TRSF E-BANKING DB                0804/FTFVA/WS95031                                         70,000.00 DB                         1,880,087.49
-			//                                                       12208/SHOPEEPAY
-			//                                                       -
-			//                                                       -
-			//                                                       118751555
-			if keterangan2matches := reMutasi.FindSubmatch(matches[matchIndex][3]); keterangan2matches != nil {
-				matches[matchIndex] = append(matches[matchIndex][:3], []byte(""), []byte(""), keterangan2matches[1], keterangan2matches[2], matches[matchIndex][5])
-			}
-		}
-
-		output.ParsedTransactions = append(output.ParsedTransactions, matches...)
-
-		// get the balance. So, we can do automatic check whether the parser has bug or not.
-		if i == len(pages)-2 {
-			totalMutasiMatches := reTotalMutasi.FindAllSubmatch(page[saldoIndex+7:], -1)
-			for _, totalMutasiMatch := range totalMutasiMatches {
-				numberOfTransactions, err := strconv.Atoi(string(totalMutasiMatch[3]))
-				if err != nil {
-					return TextToParsed{}, err
-				}
-				output.NumberOfTransactionsFromFile += numberOfTransactions
-
-				mutasi, err := strconv.ParseFloat(strings.ReplaceAll(string(totalMutasiMatch[2]), ",", ""), 64)
-				if err != nil {
-					return TextToParsed{}, err
-				}
-				if bytes.Equal(totalMutasiMatch[1], []byte("MUTASI CR")) {
-					output.TotalMutasiFromFile += mutasi
-				} else if bytes.Equal(totalMutasiMatch[1], []byte("MUTASI DB")) {
-					output.TotalMutasiFromFile -= mutasi
-				}
-			}
-
-			// check whether number of transactions match.
-			if len(output.ParsedTransactions)-1 != output.NumberOfTransactionsFromFile {
-				return TextToParsed{}, errors.New("the number of parsed transactions does not match the summary from the file")
-			}
-		}
+	// check whether number of transactions match.
+	if len(output.Transactions)-1 != output.NumberOfTransactions {
+		return nil, errors.New("the number of parsed transactions does not match the summary from the file")
 	}
 
 	return output, nil
+}
+
+var summaryRegex = regexp.MustCompile(`(?m)^ {2,}(MUTASI CR|MUTASI DB) {2,}: {2,}([\d,.]+) {2,}(\d+)$`)
+
+func findSummaryMatches(text *[]byte) (mutasiAmount float64, numberOfTransactions int, err error) {
+	// // get the balance. So, we can do automatic check whether the parser has bug or not.
+	matches := summaryRegex.FindAllSubmatch(*text, -1)
+	if matches == nil {
+		return 0, 0, errors.New("no matching mutasi found")
+	}
+	for _, match := range matches {
+		n, err := strconv.Atoi(string(match[3]))
+		if err != nil {
+			return 0, 0, err
+		}
+		numberOfTransactions += n
+
+		mutasi, err := strconv.ParseFloat(strings.ReplaceAll(string(match[2]), ",", ""), 64)
+		if err != nil {
+			return 0, 0, err
+		}
+		if bytes.Equal(match[1], []byte("MUTASI CR")) {
+			mutasiAmount += mutasi
+		} else if bytes.Equal(match[1], []byte("MUTASI DB")) {
+			mutasiAmount -= mutasi
+		}
+	}
+
+	return mutasiAmount, numberOfTransactions, nil
+}
+
+var yearRegexp = regexp.MustCompile(`(?m)^ {2,}PERIODE {2,}: {2,}[A-Z]{3,9} ([0-9]{4})$`)
+var transactionRegex = regexp.MustCompile(`(?m)^(?: {2,}(?P<TANGGAL>[0-9]{2}/[0-9]{2}))?(?: {2,21}(?P<KETERANGAN1>[\w/:&.,()-]+(?: [\w/:&.,()-]+)*))?(?: {2,73}(?P<KETERANGAN2>[\w/:&.,()'-]+(?: {1,4}[\w/:&.,()'-]+)*))?(?: {2,}(?P<CBG>[0-9]{4}))?(?: {2,98}(?P<MUTASI>[\d,.]+)?(?: (?P<ENTRY>DB))?)?(?: {2,}(?P<SALDO>[\d,.]+))?$`)
+
+func findTransactionMatches(text *[]byte) ([][][]byte, error) {
+	year := yearRegexp.FindSubmatch(*text)
+	if year == nil {
+		return nil, errors.New("no match year found")
+	}
+
+	output, err := removePageHeader(text)
+	if err != nil {
+		return nil, err
+	}
+
+	matches := transactionRegex.FindAllSubmatch(output, -1)
+	if matches == nil {
+		return nil, errors.New("no match transactions found")
+	}
+	// index from range can't be modified e.g with index--. So, use for loop.
+	for matchIndex := 0; matchIndex < len(matches); matchIndex++ {
+		match := &matches[matchIndex]
+
+		// the regex for transaction matches empty line. So, remove it from the array.
+		if len((*match)[0]) == 0 {
+			matches = append(matches[:matchIndex], matches[matchIndex+1:]...)
+			matchIndex--
+			continue
+		}
+
+		// if the Group DATE is empty then it is a subline of a transaction. So, append the matches to the previous element.
+		if len((*match)[1]) == 0 {
+
+			// the PDF uses line feed and horizontal tab ASCII characters to create the table.
+			// So, combine it into one line.
+			for submatchIndex, submatch := range *match {
+				// len(submatch) == 0 because the regex matches empty column. So, ignore it.
+				if len(submatch) == 0 {
+					continue
+				}
+
+				transactionIndex := matchIndex - 1
+				matches[transactionIndex][submatchIndex] = append(
+					matches[transactionIndex][submatchIndex],
+					append([]byte("\n"), submatch...)...)
+			}
+			matches = append(matches[:matchIndex], matches[matchIndex+1:]...)
+			matchIndex--
+			continue
+		} else {
+			// if group DATE is not empty then modify the Group DATE
+			(*match)[1] = append((*match)[1], append([]byte("/"), year[1]...)...)
+		}
+
+		fixTransactionRegexIncorrectlyCategorizingGroupMutasiAsGroupKeterangan2(match)
+	}
+
+	return matches, nil
+}
+
+func removePageHeader(text *[]byte) (output []byte, err error) {
+	// pdftotext sinsert page break between pages
+	pages := bytes.Split(*text, []byte("\x0C"))
+
+	// bytes.Split slices into subslices separated by the separator.
+	// hellohello  -> len: 2 output: [hello,hello]
+	// hellohello -> len: 3 output: [hello,hello,]
+	for pageIndex, page := range pages[:len(pages)-1] {
+		// SALDO is the rightmost column header, each page has it.
+		// the regex for transaction is not designed to match the entire text. So, remove it.
+		saldoIndex := bytes.Index(page, []byte("SALDO\n\n"))
+		if saldoIndex == -1 {
+			return nil, fmt.Errorf(`page %v does not have table`, pageIndex+1)
+		}
+
+		output = append(output, page[saldoIndex+7:]...)
+	}
+
+	return output, nil
+}
+
+var mutasiColumnRegex = regexp.MustCompile(`^([\d,]+\.\d+)(?: (DB))?$`)
+
+func fixTransactionRegexIncorrectlyCategorizingGroupMutasiAsGroupKeterangan2(match *[][]byte) {
+	// Hot fix:
+	// in some case, the regex incorrectly categorizes Group MUTASI as Group KETERANGAN2
+	// changing the quantifier for Group KETERANGAN2 will cause the regex to fail to categorize rows containing only Group KETERANGAN2
+	// the sample:
+	//
+	//  01/04          TARIKAN ATM 01/04                                                                        1,000,000.00 DB                         1,070,000.00
+	//  02/04          TRSF E-BANKING DB                0204/AXYVB/ZZ93211                                         70,000.00 DB                         1,000,000.00
+	//                                                  12208/AMAZONPAY
+	//                                                  -
+	//                                                  -
+	//                                                  216454321
+	if keterangan2matches := mutasiColumnRegex.FindSubmatch((*match)[3]); keterangan2matches != nil {
+		(*match) = append((*match)[:3], []byte(""), []byte(""), keterangan2matches[1], keterangan2matches[2], (*match)[5])
+	}
 }
