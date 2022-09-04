@@ -22,36 +22,46 @@ func main() {
 	}
 	filepath := os.Args[1]
 
-	output, err := pdftotext.ConvertFilePath(filepath)
+	text, err := pdftotext.ConvertFilePath(filepath)
 	if err != nil {
 		panic(err)
 	}
 
-	transactions, err := texttoparsed.Parse(output)
+	macthes, err := texttoparsed.Parse(text)
 	if err != nil {
 		panic(err)
 	}
 
-	// RenderPDF(transactions)
+	RenderPDF(macthes)
 
-	accounts, err := parsedtoaccount.Convert(transactions)
+	accounts, err := parsedtoaccount.Convert(macthes)
 	if err != nil {
 		panic(err)
 	}
 
-	// RenderAccounts(accounts)
+	RenderAccounts(accounts)
 	RenderSummary(accounts)
 
 	fmt.Println(time.Since(start))
 }
 
-func RenderPDF(transactions [][][]byte) {
+var p = message.NewPrinter(language.English)
+
+func RenderPDF(matches *texttoparsed.TextToParsed) {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
-	t.AppendHeader(table.Row{"TANGGAL", "KETERANGAN", "", "CBG", "MUTASI", "", "SALDO"})
+	t.AppendHeader(table.Row{"TANGGAL", "KETERANGAN", "", "CBG", "MUTASI", "SALDO"})
 	t.AppendSeparator()
-	for _, transaction := range transactions {
-		t.AppendRow(table.Row{string(transaction[1]), string(transaction[2]), string(transaction[3]), string(transaction[4]), string(transaction[5]), string(transaction[6]), string(transaction[7])})
+	for _, transaction := range matches.Transactions {
+		columnMutasi := p.Sprintf("%.2f %v", transaction.Mutation, string(transaction.Entry))
+		if len(columnMutasi) == 5 {
+			columnMutasi = ""
+		}
+		columnSasldo := p.Sprintf("%.2f", transaction.Balance)
+		if len(columnSasldo) == 4 {
+			columnSasldo = ""
+		}
+		t.AppendRow(table.Row{string(transaction.Date), string(transaction.Description1), string(transaction.Description2), string(transaction.Branch), columnMutasi, columnSasldo})
 	}
 	t.Render()
 }
@@ -61,14 +71,17 @@ func RenderAccounts(accounts *parsedtoaccount.Accounts) {
 	t.SetOutputMirror(os.Stdout)
 	t.AppendHeader(table.Row{"TANGGAL", "KETERANGAN", "MUTASI"})
 	t.AppendSeparator()
-	p := message.NewPrinter(language.English)
 	for _, accountName := range accounts.AccountNames() {
 		t.SetTitle(string(accountName))
 		t.ResetRows()
 		t.ResetFooters()
 		accountIndex := accounts.AccountIndex(accountName)
 		for _, transaction := range accounts.Transactions()[accountIndex] {
-			t.AppendRow(table.Row{string(transaction[0]), string(transaction[1]), string(transaction[2])})
+			if transaction.Description2 != nil {
+				t.AppendRow(table.Row{string(transaction.Date), string(transaction.Description2), p.Sprintf("%.2f %v", transaction.Mutation, string(transaction.Entry))})
+			} else {
+				t.AppendRow(table.Row{string(transaction.Date), string(transaction.Description1), p.Sprintf("%.2f %v", transaction.Mutation, string(transaction.Entry))})
+			}
 		}
 		t.AppendFooter(table.Row{"", "Total", p.Sprintf("%.2f", accounts.Balances()[accountIndex])})
 		t.Render()
@@ -80,7 +93,6 @@ func RenderSummary(accounts *parsedtoaccount.Accounts) {
 	t.SetOutputMirror(os.Stdout)
 	t.AppendHeader(table.Row{"ACCOUNT", "BALANCE"})
 	t.AppendSeparator()
-	p := message.NewPrinter(language.English)
 	total := 0.00
 	for _, accountName := range accounts.AccountNames() {
 		accountIndex := accounts.AccountIndex(accountName)

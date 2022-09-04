@@ -9,9 +9,19 @@ import (
 	"strings"
 )
 
+type Transaction struct {
+	Date         []byte
+	Description1 []byte
+	Description2 []byte
+	Branch       []byte
+	Mutation     float64
+	Entry        []byte
+	Balance      float64
+}
+
 type TextToParsed struct {
 	Text                 []byte
-	Transactions         [][][]byte
+	Transactions         []Transaction
 	MutasiAmount         float64
 	NumberOfTransactions int
 	Period               []byte
@@ -33,6 +43,7 @@ func Parse(text *[]byte) (*TextToParsed, error) {
 
 	// check whether number of transactions match.
 	if len(t.Transactions)-1 != t.NumberOfTransactions {
+		fmt.Println(len(t.Transactions)-1, t.NumberOfTransactions)
 		return nil, fmt.Errorf(`the number of parsed transactions does not match the summary from the file with period %v`, string(t.Period))
 	}
 
@@ -93,14 +104,14 @@ func (t *TextToParsed) findTransactionMatches() error {
 	if matches == nil {
 		return errors.New("no match transactions found")
 	}
-	// index from range can't be modified e.g with index--. So, use for loop.
+	// index from range can't be modified e.g with matchIndex--. So, use for loop.
 	for matchIndex := 0; matchIndex < len(matches); matchIndex++ {
 		match := &matches[matchIndex]
 
 		// the regex for transaction matches empty line. So, remove it from the array.
 		if len((*match)[0]) == 0 {
-			matches = append(matches[:matchIndex], matches[matchIndex+1:]...)
-			matchIndex--
+			// matches = append(matches[:matchIndex], matches[matchIndex+1:]...)
+			// matchIndex--
 			continue
 		}
 
@@ -111,27 +122,72 @@ func (t *TextToParsed) findTransactionMatches() error {
 			// So, combine it into one line.
 			for submatchIndex, submatch := range *match {
 				// len(submatch) == 0 because the regex matches empty column. So, ignore it.
-				if len(submatch) == 0 {
+				if submatchIndex == 0 || len(submatch) == 0 {
 					continue
 				}
 
-				transactionIndex := matchIndex - 1
-				matches[transactionIndex][submatchIndex] = append(
-					matches[transactionIndex][submatchIndex],
-					append([]byte("\n"), submatch...)...)
+				transactionIndex := len(t.Transactions) - 1
+				switch submatchIndex {
+				case 2:
+					t.Transactions[transactionIndex].Description1 = append(t.Transactions[transactionIndex].Description1, append([]byte("\n"), submatch...)...)
+				case 3:
+					t.Transactions[transactionIndex].Description2 = append(t.Transactions[transactionIndex].Description2, append([]byte("\n"), submatch...)...)
+				default:
+					return fmt.Errorf(`error found subline of a transaction for column at index %v from the file with period %v`, submatchIndex-1, string(t.Period))
+				}
+
+				// transactionIndex := matchIndex - 1
+				// matches[transactionIndex][submatchIndex] = append(
+				// 	matches[transactionIndex][submatchIndex],
+				// 	append([]byte("\n"), submatch...)...)
 			}
-			matches = append(matches[:matchIndex], matches[matchIndex+1:]...)
-			matchIndex--
+			// matches = append(matches[:matchIndex], matches[matchIndex+1:]...)
+			// matchIndex--
 			continue
 		} else {
-			// if group DATE is not empty then modify the Group DATE
-			(*match)[1] = append((*match)[1], append([]byte("/"), period[2]...)...)
+			// // if group DATE is not empty then modify the Group DATE
+			// (*match)[1] = append((*match)[1], append([]byte("/"), period[2]...)...)
+
+			transaction := Transaction{
+				Date:         append((*match)[1], append([]byte("/"), period[2]...)...),
+				Description1: (*match)[2],
+				Description2: (*match)[3],
+				Branch:       (*match)[4],
+				Entry:        (*match)[6],
+			}
+
+			if (*match)[5] != nil {
+				mutasi, err := strconv.ParseFloat(strings.ReplaceAll(string((*match)[5]), ",", ""), 64)
+				if err != nil {
+					return errors.New("heaalo")
+				}
+				transaction.Mutation = mutasi
+			}
+			if (*match)[7] != nil {
+				balance, err := strconv.ParseFloat(strings.ReplaceAll(string((*match)[7]), ",", ""), 64)
+				if err != nil {
+					return errors.New("helo")
+				}
+				transaction.Balance = balance
+			}
+
+			t.Transactions = append(t.Transactions, transaction)
 		}
 
-		fixTransactionRegexIncorrectlyCategorizingGroupMutasiAsGroupKeterangan2(match)
+		// fixTransactionRegexIncorrectlyCategorizingGroupMutasiAsGroupKeterangan2(match)
+		transactionIndex := len(t.Transactions) - 1
+		if keterangan2matches := mutasiColumnRegex.FindSubmatch((*match)[3]); keterangan2matches != nil {
+			mutasi, err := strconv.ParseFloat(strings.ReplaceAll(string(keterangan2matches[1]), ",", ""), 64)
+			if err != nil {
+				return errors.New("wowww")
+			}
+			t.Transactions[transactionIndex].Mutation = mutasi
+			t.Transactions[transactionIndex].Entry = keterangan2matches[2]
+			// (*match) = append((*match)[:3], []byte(""), []byte(""), keterangan2matches[1], keterangan2matches[2], (*match)[5])
+		}
 	}
 
-	t.Transactions = matches
+	// t.Transactions = matches
 
 	return nil
 }
