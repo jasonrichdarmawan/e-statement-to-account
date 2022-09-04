@@ -57,11 +57,11 @@ func RenderPDF(matches *texttoparsed.TextToParsed) {
 		if len(columnMutasi) == 5 {
 			columnMutasi = ""
 		}
-		columnSasldo := p.Sprintf("%.2f", transaction.Balance)
-		if len(columnSasldo) == 4 {
-			columnSasldo = ""
+		columnSaldo := p.Sprintf("%.2f", transaction.Balance)
+		if len(columnSaldo) == 4 {
+			columnSaldo = ""
 		}
-		t.AppendRow(table.Row{string(transaction.Date), string(transaction.Description1), string(transaction.Description2), string(transaction.Branch), columnMutasi, columnSasldo})
+		t.AppendRow(table.Row{string(transaction.Date), string(transaction.Description1), string(transaction.Description2), string(transaction.Branch), columnMutasi, columnSaldo})
 	}
 	t.Render()
 }
