@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"html/template"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -19,6 +18,7 @@ import (
 )
 
 func main() {
+	http.Handle("/", http.FileServer(http.Dir("./public")))
 	http.HandleFunc("/e-statement-to-account", parserHandler)
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
@@ -27,16 +27,8 @@ func main() {
 	}
 }
 
-var t = template.Must(template.ParseFiles("examples/api/public/upload.html"))
-
-func displayPage(wr http.ResponseWriter, page string, data interface{}) {
-	t.ExecuteTemplate(wr, page+".html", data)
-}
-
 func parserHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case "GET":
-		displayPage(w, "upload", nil)
 	case "POST":
 		parseMultipartForm(w, r)
 	default:
