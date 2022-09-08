@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"io"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"regexp"
@@ -13,18 +13,79 @@ import (
 	"github.com/kidfrom/e-statement-to-account/parsedtoaccount"
 	"github.com/kidfrom/e-statement-to-account/pdftotext"
 	"github.com/kidfrom/e-statement-to-account/texttoparsed"
+	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 )
 
+const environment = "development"
+
 func main() {
-	http.Handle("/", http.FileServer(http.Dir("./public")))
-	http.HandleFunc("/e-statement-to-account", parserHandler)
-	err := http.ListenAndServe(":8080", nil)
-	if err != nil {
-		fmt.Println(err)
-		return
+	h := makeHTTPServer()
+
+	if environment == "production" {
+		m := &autocert.Manager{
+			Cache:      autocert.DirCache("secret-dir"),
+			Prompt:     autocert.AcceptTOS,
+			Email:      "jason.onggo@tempatkerja.com",
+			HostPolicy: autocert.HostWhitelist("estatement.godata.id"),
+		}
+
+		hs := makeHTTPServer()
+		hs.Addr = ":https"
+		hs.TLSConfig = m.TLSConfig()
+
+		go func() {
+			log.Printf("Starting HTTPS Server on port %s\n", hs.Addr)
+			err := hs.ListenAndServeTLS("", "")
+			if err != nil {
+				log.Panic(err)
+			}
+		}()
+
+		h = makeHTTPServerRedirectToHTTPS()
+
+		// allow autocert handle Let's Encrypt auth callbacks over HTTP.
+		// it'll pass all other urls to our handler
+		h.Handler = m.HTTPHandler(h.Handler)
+	} else if environment == "development" {
+		h.Addr = ":8080"
 	}
+
+	log.Printf("Starting HTTP Server on port %s", h.Addr)
+	err := h.ListenAndServe()
+	if err != nil {
+		log.Panic(err)
+	}
+}
+
+func makeHTTPServer() *http.Server {
+	mux := &http.ServeMux{}
+	mux.Handle("/", http.FileServer(http.Dir("./public")))
+	mux.HandleFunc("/e-statement-to-account", parserHandler)
+	return makeHTTPServerWithMux(mux)
+}
+
+func makeHTTPServerWithMux(mux *http.ServeMux) *http.Server {
+	// set timeouts so that a slow or malicious client
+	// doesn't hold resources forever
+	return &http.Server{
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 5 * time.Second,
+		IdleTimeout:  120 * time.Second,
+		Handler:      mux,
+		Addr:         ":http",
+	}
+}
+
+func makeHTTPServerRedirectToHTTPS() *http.Server {
+	mux := &http.ServeMux{}
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// TODO: vulnerability test
+		newURI := "https://" + r.Host + r.URL.String()
+		http.Redirect(w, r, newURI, http.StatusFound)
+	})
+	return makeHTTPServerWithMux(mux)
 }
 
 func parserHandler(w http.ResponseWriter, r *http.Request) {
