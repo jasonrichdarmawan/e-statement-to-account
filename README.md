@@ -11,9 +11,5 @@ $ sudo apt-get install poppler-utils
 # Usage
 
 ```
-$ go run examples/api/main.go
+$ go run examples/filepath/main.go [pdf-file]
 ```
-
-# examples/api's screenshot
-
-![](examples_api.png)
