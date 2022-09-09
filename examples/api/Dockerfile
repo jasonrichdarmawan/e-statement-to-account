@@ -35,6 +35,6 @@ RUN adduser \
 # Use an underprivileged user.
 USER appuser:appuser
 
-EXPOSE 8080
+EXPOSE 80/tcp 443/tcp
 
-CMD ["./main"]
+ENTRYPOINT ["/main"]

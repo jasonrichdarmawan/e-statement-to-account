@@ -18,6 +18,7 @@ import (
 	"golang.org/x/text/message"
 )
 
+// TODO: change the environment variable in Dockerfile.
 const environment = "development"
 
 func main() {
