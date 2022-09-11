@@ -17,3 +17,5 @@ $ docker run -p 80:80/tcp -p 443:443/tcp -v /secret-dir:/secret-dir --name e-sta
 - [ ] Do `go mod init` in the `examples` folder.
 
   The `e-statement-to-account` project does not need the external packages. The `examples/api` and `examples/filepath` are the one who need the external packages. However, for example, if you do `go get github.com/kidfrom/e-statement-to-account` in `examples/api`, it will throw error.
+
+test push from dev container
