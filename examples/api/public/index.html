@@ -1,17 +1,25 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" >
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PT Bank Central Aszia Tbk e-statement parser to accounts</title>
+    <title>PT Bank Central Asia Tbk e-statement PDF parser to accounts</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <div style="display: flex; justify-content: right;">
+        <input type="checkbox" id="switch" name="darkmode">
+        <label for="switch"></label>
+    </div>
+    
     <form 
     action="/e-statement-to-account" 
     enctype="multipart/form-data" method="post">
         <input type="file" name="e-statement" multiple/>
         <input type="submit" value="upload" />
     </form>
+
+    <script src="js/toggledarkmode.js"></script>
 </body>
 </html>

@@ -63,6 +63,8 @@ func main() {
 		h.Handler = m.HTTPHandler(h.Handler)
 	} else if *environment == "development" {
 		h.Addr = ":8080"
+	} else {
+		log.Fatalf("environment variable is not recognized")
 	}
 
 	log.Printf("Starting HTTP Server on port %s", h.Addr)

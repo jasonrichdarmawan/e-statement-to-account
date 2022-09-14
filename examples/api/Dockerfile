@@ -12,21 +12,33 @@ COPY go.mod ./
 COPY go.sum ./
 RUN go mod download
 
-COPY . ./
+# Copy required Go modules
+COPY ./pdftotext ./pdftotext
+COPY ./texttoparsed ./texttoparsed
+COPY ./parsedtoaccount ./parsedtoaccount
+COPY ./examples/api/main.go ./
+RUN go build -o /main
 
-RUN go build -o /main ./examples/api/main.go
+FROM node:16.17-alpine3.16
+
+WORKDIR /
+
+# Compile .ts file to .js
+COPY ./examples/api/app /app
+RUN npm install typescript@4.8 -g
+RUN npx tsc -p ./app --outDir ./public/js
 
 FROM alpine:3.16
 
 WORKDIR /
 
 COPY --from=0 /main /main
-
-COPY --from=0 /app/examples/api/public /public
+COPY ./examples/api/public /public
+COPY --from=1 /public/js /public/js
 
 RUN apk add poppler-utils
 
-RUN mkdir /secret-dir && chown 10001:10001 /secret-dir & chmod 750 /secret-dir
+RUN mkdir /secret-dir && chown 10001:10001 /secret-dir && chmod 750 /secret-dir
 
 RUN adduser \
     -h "/dev/null" \
@@ -41,4 +53,4 @@ USER 10001:10001
 
 EXPOSE 80/tcp 443/tcp
 
-ENTRYPOINT ["/main", "-env", "production", "-hostname", "estatement.godata.id"]
+ENTRYPOINT ["/main", "-env", "development", "-hostname", "estatement.godata.id"]

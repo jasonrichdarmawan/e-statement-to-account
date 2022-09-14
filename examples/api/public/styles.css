@@ -1,0 +1,51 @@
+:root {
+    --color-fg-default: black;
+    --color-btn-bg:#FE016C;
+}
+
+html[data-theme='dark'] {
+    --color-fg-default: #c9d1d9;
+    --color-canvas-default: #0d1117;
+    --color-btn-bg: #FFBD07;
+}
+
+html * {
+    transition: cubic-bezier(0.68, -0.55, 0.27, 01.55) 420ms!important;
+}
+
+body {
+    color: var(--color-fg-default);
+    background-color: var(--color-canvas-default);
+}
+
+input[type=checkbox] {
+    visibility: hidden;
+}
+
+label {
+    cursor: pointer;
+    background-color: var(--color-btn-bg);
+    width: 55px;
+    height: 30px;
+    border-radius: 100px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+label:after {
+    content: '';
+    background: #fff;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    position: absolute;
+    left: 5px;
+    transition: cubic-bezier(0.68, -0.55, 0.27, 01.55) 320ms;
+}
+
+input:checked + label:after {
+    left: calc(100% - 5px);
+    transform: translateX(-100%);
+}
