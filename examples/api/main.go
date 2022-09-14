@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"io"
 	"log"
 	"mime/multipart"
@@ -18,18 +19,29 @@ import (
 	"golang.org/x/text/message"
 )
 
-// TODO: change the environment variable in Dockerfile.
-const environment = "development"
+var (
+	environment = flag.String("env", "development", "This is used by the program, a flag to start HTTPS server")
+	email       = flag.String("email", "", "This is used by CAs, such as Let's Encrypt, to notify about problems with issued certificates.")
+	hostname    = flag.String("hostname", "", "This is used by autocert, controls which domains the Manager will attempt to retrieve new certificates for.")
+)
+
+func init() {
+	flag.Parse()
+}
 
 func main() {
 	h := makeHTTPServer()
 
-	if environment == "production" {
+	if *environment == "production" {
+		if *hostname == "" {
+			log.Fatal("the hostname flag cannot be empty in a production environment.")
+		}
+
 		m := &autocert.Manager{
 			Cache:      autocert.DirCache("secret-dir"),
 			Prompt:     autocert.AcceptTOS,
-			Email:      "jason.onggo@tempatkerja.com",
-			HostPolicy: autocert.HostWhitelist("estatement.godata.id"),
+			Email:      *email,
+			HostPolicy: autocert.HostWhitelist(*hostname),
 		}
 
 		hs := makeHTTPServer()
@@ -49,7 +61,7 @@ func main() {
 		// allow autocert handle Let's Encrypt auth callbacks over HTTP.
 		// it'll pass all other urls to our handler
 		h.Handler = m.HTTPHandler(h.Handler)
-	} else if environment == "development" {
+	} else if *environment == "development" {
 		h.Addr = ":8080"
 	}
 

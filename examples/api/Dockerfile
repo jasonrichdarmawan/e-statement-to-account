@@ -1,8 +1,9 @@
 # syntax=docker/dockerfile:1
 
+## Build
 # Alpine is chosen for its small footprint
 # compared to Ubuntu
-FROM golang:1.19-alpine AS build
+FROM golang:1.19-alpine
 
 WORKDIR /app
 
@@ -13,28 +14,31 @@ RUN go mod download
 
 COPY . ./
 
-RUN go build -o /main examples/api/main.go
+RUN go build -o /main ./examples/api/main.go
 
 FROM alpine:3.16
 
-RUN apk add poppler-utils
-
 WORKDIR /
 
-COPY --from=build /main /main
-COPY --from=build /app/examples/api/public/ /public/
+COPY --from=0 /main /main
+
+COPY --from=0 /app/examples/api/public /public
+
+RUN apk add poppler-utils
+
+RUN mkdir /secret-dir && chown 10001:10001 /secret-dir & chmod 750 /secret-dir
 
 RUN adduser \
---disabled-password \
---gecos "" \
---home "/nonexistent" \
---shell "/sbin/nologin" \
---no-create-home \
---uid "10001" \
-"appuser"
-# Use an underprivileged user.
-USER appuser:appuser
+    -h "/dev/null" \
+    -g "" \
+    -s "/sbin/nologin" \
+    -D \
+    -H \
+    -u 10001 \
+    playerone
+# USER 10001 works. However, the gid=0(root). So, don't do USER 10001.
+USER 10001:10001
 
 EXPOSE 80/tcp 443/tcp
 
-ENTRYPOINT ["/main"]
+ENTRYPOINT ["/main", "-env", "production", "-hostname", "estatement.godata.id"]
