@@ -1,0 +1,76 @@
+/*
+--color-* vars are from https://github.com
+*/
+:root {
+    --color-canvas-default: rgba(255,255,255,0);
+    --color-btn-bg: #f6f8fa;
+    --color-btn-border: rgba(27,31,36,0.15);
+    --color-fg-muted: #57606a;
+    --color-accent-fg: #0969da;
+    --color-border-default: #d0d7de;
+}
+
+html[data-theme='dark'] {
+    --color-canvas-default: #161b22;
+    --color-btn-bg: #21262d;
+    --color-btn-border: rgba(240,246,252,0.1);
+    --color-fg-muted: #8b949e;
+    --color-accent-fg: #58a6ff;
+    --color-border-default: #30363d;
+}
+
+body {
+    transition: cubic-bezier(0.075, 0.82, 0.165, 1) 1s;
+    color: var(--color-fg-default);
+    background-color: var(--color-canvas-default);
+}
+
+input[type=checkbox] {
+    display: none;
+}
+
+label {
+    cursor: pointer;
+    background-color: var(--color-btn-bg);
+    border: 1px solid;
+    border-color: var(--color-btn-border);
+    width: 55px;
+    height: 30px;
+    border-radius: 100px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+label:after {
+    left: 5px;
+    content: '';
+    background: var(--color-fg-muted);
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    position: absolute;
+    transition: cubic-bezier(0.68, -0.55, 0.27, 01.55) 320ms;
+}
+
+input:checked + label:after {
+    left: calc(100% - 5px);
+    transform: translateX(-100%);
+}
+
+.color-fg-muted {
+    color: var(--color-fg-muted);
+}
+
+a {
+    color: var(--color-accent-fg);
+}
+
+.ActionList-item-visual {
+    fill: var(--color-fg-muted)
+}
+
+.footer {
+    border-top: 1px solid var(--color-border-default);
+}

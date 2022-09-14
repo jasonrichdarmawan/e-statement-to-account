@@ -1,0 +1,12 @@
+.flex-right {
+    display: flex; 
+    justify-content: right;
+}
+
+.footer {
+    display: flex;
+    align-items: center;
+    flex-direction: column-reverse;
+    margin: 40px 0;
+    padding: 40px 0;
+}
