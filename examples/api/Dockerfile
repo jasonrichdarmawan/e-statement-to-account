@@ -52,5 +52,3 @@ RUN adduser \
 USER 10001:10001
 
 EXPOSE 80/tcp 443/tcp
-
-ENTRYPOINT ["/main", "-env", "development", "-hostname", "estatement.godata.id"]

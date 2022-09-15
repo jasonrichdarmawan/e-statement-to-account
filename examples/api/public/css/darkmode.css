@@ -5,18 +5,42 @@
     --color-canvas-default: rgba(255,255,255,0);
     --color-btn-bg: #f6f8fa;
     --color-btn-border: rgba(27,31,36,0.15);
+    --color-fg-default: #24292f;
     --color-fg-muted: #57606a;
     --color-accent-fg: #0969da;
     --color-border-default: #d0d7de;
+    --color-btn-bg: #f6f8fa;
+    --color-btn-border: rgba(27,31,36,0.15);
+    --color-btn-danger-text: #cf222e;
+    --color-btn-danger-hover-text: #ffffff;
+    --color-btn-danger-hover-bg: #a40e26;
+    --color-btn-danger-hover-border: rgba(27,31,36,0.15);
+    --color-btn-primary-text: #ffffff;
+    --color-btn-primary-bg: #2da44e;
+    --color-btn-primary-border: rgba(27,31,36,0.15);
+    --color-btn-primary-hover-bg: #2c974b;
+    --color-btn-primary-hover-border: rgba(27,31,36,0.15);
 }
 
 html[data-theme='dark'] {
     --color-canvas-default: #161b22;
     --color-btn-bg: #21262d;
     --color-btn-border: rgba(240,246,252,0.1);
+    --color-fg-default: #f0f6fc;
     --color-fg-muted: #8b949e;
     --color-accent-fg: #58a6ff;
     --color-border-default: #30363d;
+    --color-btn-bg: #21262d;
+    --color-btn-border: rgba(240,246,252,0.1);
+    --color-btn-danger-text: #f85149;
+    --color-btn-danger-hover-text: #ffffff;
+    --color-btn-danger-hover-bg: #da3633;
+    --color-btn-danger-hover-border: #f85149;
+    --color-btn-primary-text: #ffffff;
+    --color-btn-primary-bg: #238636;
+    --color-btn-primary-border: rgba(240,246,252,0.1);
+    --color-btn-primary-hover-bg: #2ea043;
+    --color-btn-primary-hover-border: rgba(240,246,252,0.1);
 }
 
 body {
@@ -25,11 +49,11 @@ body {
     background-color: var(--color-canvas-default);
 }
 
-input[type=checkbox] {
+input[id=switch] {
     display: none;
 }
 
-label {
+label[for=switch] {
     cursor: pointer;
     background-color: var(--color-btn-bg);
     border: 1px solid;
@@ -43,7 +67,7 @@ label {
     position: relative;
 }
 
-label:after {
+label[for=switch]:after {
     left: 5px;
     content: '';
     background: var(--color-fg-muted);
@@ -54,7 +78,7 @@ label:after {
     transition: cubic-bezier(0.68, -0.55, 0.27, 01.55) 320ms;
 }
 
-input:checked + label:after {
+input[id=switch]:checked + label[for=switch]:after {
     left: calc(100% - 5px);
     transform: translateX(-100%);
 }
