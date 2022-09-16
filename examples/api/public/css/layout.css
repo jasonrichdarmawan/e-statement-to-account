@@ -10,3 +10,11 @@
     margin: 40px 0;
     padding: 40px 0;
 }
+
+.d-flex {
+    display: flex;
+}
+
+.mr-3 {
+    margin-right: 16px
+}
