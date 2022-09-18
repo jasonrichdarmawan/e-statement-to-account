@@ -4,6 +4,15 @@
     margin: 16px 0;
 }
 
+.Box-row {
+    padding: 16px;
+    border-top: 1px solid var(--color-border-muted);
+}
+
+.Box-row:first-child {
+    border-color: transparent;
+}
+
 .blankslate-spacious {
     padding: 80px 40px;
 }
@@ -138,4 +147,28 @@ label:hover[for=e-statement] {
     border: solid white;
     border-width: 0 3px 3px 0;
     transform: rotate(45deg);
+}
+
+.mr-2 {
+    margin-right: 8px;
+}
+
+.flex-auto {
+    flex: auto;
+}
+
+.css-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.Link--primary {
+    color: var(--color-fg-default);
+}
+
+.btn-link {
+    cursor: pointer;
+    background-color: transparent;
+    border: 0;
 }

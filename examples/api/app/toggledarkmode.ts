@@ -1,7 +1,7 @@
 var CheckBox = <HTMLInputElement> document.querySelector('input[name=darkmode]')
 
 if (!(CheckBox instanceof HTMLInputElement)) {
-    throw new Error("var CheckBox is not instance of HTMLInputElement")
+    throw Error("var CheckBox is not instance of HTMLInputElement")
 }
 
 CheckBox.addEventListener('change', function() {

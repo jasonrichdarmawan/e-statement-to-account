@@ -20,6 +20,7 @@
     --color-btn-primary-border: rgba(27,31,36,0.15);
     --color-btn-primary-hover-bg: #2c974b;
     --color-btn-primary-hover-border: rgba(27,31,36,0.15);
+    --color-border-muted: hsla(210,18%,87%,1);
 }
 
 html[data-theme='dark'] {
@@ -41,12 +42,14 @@ html[data-theme='dark'] {
     --color-btn-primary-border: rgba(240,246,252,0.1);
     --color-btn-primary-hover-bg: #2ea043;
     --color-btn-primary-hover-border: rgba(240,246,252,0.1);
+    --color-border-muted: #21262d;
 }
 
 body {
     transition: cubic-bezier(0.075, 0.82, 0.165, 1) 1s;
     color: var(--color-fg-default);
     background-color: var(--color-canvas-default);
+    font-size: 14px;
 }
 
 input[id=switch] {
@@ -92,7 +95,11 @@ a {
 }
 
 .ActionList-item-visual {
-    fill: var(--color-fg-muted)
+    fill: var(--color-fg-muted);
+}
+
+.octicon {
+    vertical-align: text-bottom;
 }
 
 .footer {
