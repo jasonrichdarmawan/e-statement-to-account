@@ -10,11 +10,13 @@
     <link rel="stylesheet" href="css/Layout.css">
     <link rel="stylesheet" href="css/Element.css">
     <link rel="stylesheet" href="css/FileDragAndDrop.css">
+    <link rel="stylesheet" href="css/Accordion.css">
+    <link rel="stylesheet" href="css/Table.css">
 </head>
 
 <body>
     <header>
-        <div class="flex-right ActionList-content">
+        <div class="flex-right ActionList-content mb-3">
             <!-- The svg element is from github.com. 
             Dark mode uses the CSS fill property of the svg element to change the color.
             Another solution is to use the object elements to link the svg files.
@@ -26,6 +28,57 @@
             <label for="switch"></label>
         </div>
     </header>
+
+    <div id="EStatement">
+        <div id="ParseToTable" hidden>
+            <button class="accordion btn btn-primary">List of Transactions</button>
+            <div id="panel">
+                <table>
+                    <thead>
+                        <tr>
+                            <th colspan="6">TRANSACTIONS</th>
+                        </tr>
+                        <tr>
+                            <th>TANGGAL</th>
+                            <th>KETERANGAN</th>
+                            <th></th>
+                            <th>CBG</th>
+                            <th>MUTASI</th>
+                            <th></th>
+                            <th>SALDO</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    
+        <div id="GroupByAccount" hidden>
+            <button class="accordion btn btn-primary">Grouped By Accounts</button>
+            <div id="panel">
+            </div>
+        </div>
+    
+        <div id="SummaryByAccount" hidden>
+            <button class="accordion btn btn-primary">Account Summary</button>
+            <div id="panel">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ACCOUNT SUMMARY</th>
+                        </tr>
+                        <tr>
+                            <th>ACCOUNT</th>
+                            <th>BALANCE</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 
     <div>
         <div id="DropZone" class="Box blankslate-spacious text-align-center">
@@ -85,6 +138,8 @@
     <script src="js/FileDragAndDrop.js"></script>
     <script src="js/idb-keyval.js"></script>
     <script src="js/FetchSVG.js"></script>
+    <script src="js/Accordion.js"></script>
+    <script src="js/RenderEStatement.js"></script>
 </body>
 
 </html>

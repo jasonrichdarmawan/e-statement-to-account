@@ -1,0 +1,16 @@
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 16px 0;
+}
+
+td, th {
+    text-align: left;
+    padding: 8px;
+    white-space: pre;
+    vertical-align: top;
+}
+
+tr:nth-child(even) {
+    background-color: var(--color-border-subtle);
+}

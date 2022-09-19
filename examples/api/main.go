@@ -112,8 +112,8 @@ func parserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 type ParserResponse struct {
-	Table    texttoparsed.TextToParsed
-	Accounts *parsedtoaccount.Accounts
+	Transactions []texttoparsed.Transaction
+	Accounts     parsedtoaccount.Accounts
 }
 
 func parseMultipartForm(w http.ResponseWriter, r *http.Request) {
@@ -172,7 +172,7 @@ func parseMultipartForm(w http.ResponseWriter, r *http.Request) {
 	response := ParserResponse{}
 
 	if parseToTable == "true" {
-		response.Table = transactions
+		response.Transactions = transactions.Transactions
 	}
 
 	accounts, err := parsedtoaccount.Convert(&transactions)
@@ -182,7 +182,7 @@ func parseMultipartForm(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if groupByAccount == "true" {
-		response.Accounts = accounts
+		response.Accounts = *accounts
 	}
 
 	responseJSON, err := json.Marshal(response)
@@ -191,18 +191,6 @@ func parseMultipartForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write(responseJSON)
-
-	// RenderPDF(&transactions, w)
-
-	// accounts, err := parsedtoaccount.Convert(&transactions)
-	// if err != nil {
-	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-	// 	return
-	// }
-
-	// RenderAccounts(accounts, w)
-
-	// RenderSummary(accounts, w)
 }
 
 type ByDate []*multipart.FileHeader
@@ -221,62 +209,3 @@ func (v ByDate) Less(i, j int) bool {
 	}
 	return date1.Before(date2)
 }
-
-// var p = message.NewPrinter(language.English)
-
-// func RenderPDF(matches *texttoparsed.TextToParsed, writer io.Writer) {
-// 	t := table.NewWriter()
-// 	t.SetOutputMirror(writer)
-// 	t.AppendHeader(table.Row{"TANGGAL", "KETERANGAN", "", "CBG", "MUTASI", "SALDO"})
-// 	t.AppendSeparator()
-// 	for _, transaction := range matches.Transactions {
-// 		columnMutasi := p.Sprintf("%.2f %v", transaction.Mutation, string(transaction.Entry))
-// 		if len(columnMutasi) == 5 {
-// 			columnMutasi = ""
-// 		}
-// 		columnSaldo := p.Sprintf("%.2f", transaction.Balance)
-// 		if len(columnSaldo) == 4 {
-// 			columnSaldo = ""
-// 		}
-// 		t.AppendRow(table.Row{string(transaction.Date), string(transaction.Description1), string(transaction.Description2), string(transaction.Branch), columnMutasi, columnSaldo})
-// 	}
-// 	t.Render()
-// }
-
-// func RenderAccounts(accounts *parsedtoaccount.Accounts, writer io.Writer) {
-// 	t := table.NewWriter()
-// 	t.SetOutputMirror(writer)
-// 	t.AppendHeader(table.Row{"TANGGAL", "KETERANGAN", "MUTASI"})
-// 	t.AppendSeparator()
-// 	for _, accountName := range accounts.AccountNames {
-// 		t.SetTitle(string(accountName))
-// 		t.ResetRows()
-// 		t.ResetFooters()
-// 		accountIndex := accounts.AccountIndex(accountName)
-// 		for _, transaction := range accounts.Transactions[accountIndex] {
-// 			if transaction.Description2 != nil {
-// 				t.AppendRow(table.Row{string(transaction.Date), string(transaction.Description2), p.Sprintf("%.2f %v", transaction.Mutation, string(transaction.Entry))})
-// 			} else {
-// 				t.AppendRow(table.Row{string(transaction.Date), string(transaction.Description1), p.Sprintf("%.2f %v", transaction.Mutation, string(transaction.Entry))})
-// 			}
-// 		}
-// 		t.AppendFooter(table.Row{"", "Total", p.Sprintf("%.2f", accounts.Balances[accountIndex])})
-// 		t.Render()
-// 	}
-// }
-
-// func RenderSummary(accounts *parsedtoaccount.Accounts, writer io.Writer) {
-// 	t := table.NewWriter()
-// 	t.SetOutputMirror(writer)
-// 	t.AppendHeader(table.Row{"ACCOUNT", "BALANCE"})
-// 	t.AppendSeparator()
-// 	total := 0.00
-// 	for _, accountName := range accounts.AccountNames {
-// 		accountIndex := accounts.AccountIndex(accountName)
-// 		balance := accounts.Balances[accountIndex]
-// 		t.AppendRow(table.Row{string(accountName), p.Sprintf("%.2f", accounts.Balances[accountIndex])})
-// 		total += balance
-// 	}
-// 	t.AppendFooter(table.Row{"Total", p.Sprintf("%.2f", total)})
-// 	t.Render()
-// }

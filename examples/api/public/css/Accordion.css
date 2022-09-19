@@ -1,0 +1,16 @@
+.accordion {
+    width: 100%;
+    padding: 16px;
+    border-radius: 0;
+    background-color: var(--color-btn-primary-bg);
+    border-color: var(--color-btn-primary-border);
+}
+
+.accordion:hover {
+    background-color: var(--color-btn-primary-hover-bg);
+    border-color: var(--color-btn-primary-hover-border);
+}
+
+.panel {
+    display: none;
+}

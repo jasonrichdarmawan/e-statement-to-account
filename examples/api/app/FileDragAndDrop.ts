@@ -138,7 +138,7 @@ buttonUploadElement.addEventListener("click", () => {
   if (parseToTableElement == null) {
     throw Error("can't find element with selector: input[type='checkbox'][name='ParseToTable']")
   }
-  
+
   const groupByAccountElement = <HTMLInputElement>document.querySelector("input[type='checkbox'][name='GroupByAccount']")
   if (groupByAccountElement == null) {
     throw Error("can't find element with selector: input[type='checkbox'][name='GroupByAccount']")
@@ -155,8 +155,9 @@ buttonUploadElement.addEventListener("click", () => {
 
   const formData = new FormData();
   formData.append("ParseToTable", parseToTableElement.checked ? "true" : "")
-  formData.append("GroupByAccount", groupByAccountElement.checked ? "true" : "")
-  formData.append("SummaryByAccount", summaryByAccountElement.checked ? "true" : "")
+  formData.append("GroupByAccount",
+    groupByAccountElement.checked ? "true" :
+      summaryByAccountElement.checked ? "true" : "")
   files.forEach((file) => {
     formData.append("Files", file)
   })
@@ -165,5 +166,17 @@ buttonUploadElement.addEventListener("click", () => {
     method: "POST",
     body: formData
   }).then((response) => response.json())
-  .then((json) => console.log(json))
+    .then((json) => {
+      CleanAllRender()
+
+      if (parseToTableElement.checked) {
+        RenderTransactions(json)
+      }
+      if (groupByAccountElement.checked) {
+        RenderGroupedByAccount(json)
+      }
+      if (summaryByAccountElement.checked) {
+        RenderAccountSummary(json)
+      }
+    })
 })
