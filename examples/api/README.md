@@ -2,8 +2,8 @@
 
 ```
 $ sudo docker volume create secret-dir
-$ docker build -t e-statement-api -f . ../..
-$ docker run -p 80:80/tcp -p 443:443/tcp -v secret-dir:/secret-dir --rm --name e-statement-api e-statement-api /main -env production -hostname hostname -email email
+$ docker build -t e-statement-api --build-arg ARCH=$(uname -m) -f ./Dockerfile ../..
+$ docker run -p 80:80/tcp -p 443:443/tcp -v secret-dir:/secret-dir -it --rm --name e-statement-api e-statement-api /main -env production -hostname hostname -email email
 ```
 
 # examples/api Usage

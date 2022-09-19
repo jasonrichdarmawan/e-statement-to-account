@@ -49,9 +49,12 @@ FROM scratch AS stage4
 
 WORKDIR /
 
+# aarch64
+ARG ARCH
+
 # $ ldd pdftotext
-COPY --from=stage3 /lib/ld-musl-aarch64.so.1 \
-/lib/ld-musl-aarch64.so.1 \
+COPY --from=stage3 /lib/ld-musl-${ARCH}.so.1 \
+/lib/ld-musl-${ARCH}.so.1 \
 /lib/libz.so.1 \
 /lib/
 COPY --from=stage3 /usr/lib/libpoppler.so.121 \
