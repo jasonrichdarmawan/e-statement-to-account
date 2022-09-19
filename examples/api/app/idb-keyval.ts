@@ -42,7 +42,7 @@ function defaultGetStore() {
  * @param key
  * @param customStore Method to get a custom store. Use with caution (see the docs).
  */
-function get<T = any>(
+function GetIndexedDB<T = any>(
     key: IDBValidKey,
     customStore = defaultGetStore(),
 ): Promise<T | undefined> {
@@ -56,7 +56,7 @@ function get<T = any>(
  * @param value
  * @param customStore Method to get a custom store. Use with caution (see the docs).
  */
-function set(
+function SetIndexedDB(
     key: IDBValidKey,
     value: any,
     customStore = defaultGetStore(),
@@ -73,7 +73,7 @@ function set(
  * @param key
  * @param customStore Method to get a custom store. Use with caution (see the docs).
  */
-function del(
+function DeleteIndexedDB(
     key: IDBValidKey,
     customStore = defaultGetStore(),
 ): Promise<void> {

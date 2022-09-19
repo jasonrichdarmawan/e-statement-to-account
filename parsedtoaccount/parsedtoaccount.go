@@ -10,9 +10,9 @@ import (
 )
 
 type Accounts struct {
-	accountNames [][]byte
-	transactions [][]texttoparsed.Transaction
-	balances     []float64
+	AccountNames [][]byte
+	Transactions [][]texttoparsed.Transaction
+	Balances     []float64
 }
 
 func Convert(t *texttoparsed.TextToParsed) (*Accounts, error) {
@@ -29,13 +29,13 @@ func Convert(t *texttoparsed.TextToParsed) (*Accounts, error) {
 
 		accountIndex := accounts.AccountIndex(accountName)
 		if accountIndex == -1 {
-			accounts.accountNames = append(accounts.accountNames, accountName)
+			accounts.AccountNames = append(accounts.AccountNames, accountName)
 			accountIndex = accounts.AccountIndex(accountName)
-			accounts.transactions = append(accounts.transactions, []texttoparsed.Transaction{})
-			accounts.balances = append(accounts.balances, 0)
+			accounts.Transactions = append(accounts.Transactions, []texttoparsed.Transaction{})
+			accounts.Balances = append(accounts.Balances, 0)
 		}
 
-		accounts.transactions[accountIndex] = append(accounts.transactions[accountIndex], match)
+		accounts.Transactions[accountIndex] = append(accounts.Transactions[accountIndex], match)
 
 		// mutasi, err := strconv.ParseFloat(strings.ReplaceAll(string(match[5]), ",", ""), 64)
 		// if err != nil {
@@ -43,10 +43,10 @@ func Convert(t *texttoparsed.TextToParsed) (*Accounts, error) {
 		// }
 
 		if bytes.Equal(match.Entry, []byte("DB")) {
-			accounts.balances[accountIndex] -= match.Mutation
+			accounts.Balances[accountIndex] -= match.Mutation
 			mutasiAmount -= match.Mutation
 		} else {
-			accounts.balances[accountIndex] += match.Mutation
+			accounts.Balances[accountIndex] += match.Mutation
 			mutasiAmount += match.Mutation
 		}
 	}
@@ -117,23 +117,11 @@ func determineAccountName(match texttoparsed.Transaction) (accountName []byte) {
 
 func (a *Accounts) AccountIndex(name []byte) int {
 	if name != nil {
-		for i, s := range a.accountNames {
+		for i, s := range a.AccountNames {
 			if bytes.Equal(name, s) {
 				return i
 			}
 		}
 	}
 	return -1
-}
-
-func (a *Accounts) AccountNames() [][]byte {
-	return a.accountNames
-}
-
-func (a *Accounts) Transactions() [][]texttoparsed.Transaction {
-	return a.transactions
-}
-
-func (a *Accounts) Balances() []float64 {
-	return a.balances
 }

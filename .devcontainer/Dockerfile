@@ -5,8 +5,9 @@ ARG VARIANT="1.19-bullseye"
 FROM mcr.microsoft.com/vscode/devcontainers/go:0-${VARIANT}
 
 # [Choice] Node.js version: none, lts/*, 18, 16, 14
-ARG NODE_VERSION="none"
+ARG NODE_VERSION="16"
 RUN if [ "${NODE_VERSION}" != "none" ]; then su vscode -c "umask 0002 && . /usr/local/share/nvm/nvm.sh && nvm install ${NODE_VERSION} 2>&1"; fi
+RUN npm install -g typescript
 
 # [Optional] Uncomment this section to install additional OS packages.
 # RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \

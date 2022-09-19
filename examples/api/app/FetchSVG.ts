@@ -1,7 +1,7 @@
 // reference: https://unpkg.com/external-svg-loader@1.6.1/svg-loader.js
 
 async function isCacheAvailable(key: string) {
-  let value = await get(key)
+  let value = await GetIndexedDB(key)
 
   if (!value) {
     return;
@@ -10,7 +10,7 @@ async function isCacheAvailable(key: string) {
   let item = JSON.parse(value)
 
   if (Date.now() > item.expiry) {
-    del(key);
+    DeleteIndexedDB(key);
     return;
   }
 
@@ -22,7 +22,7 @@ function setCache(src: string, data: string) {
     data,
     expiry: Date.now() + 60 * 60 * 1000 * 24 * 30
   })
-  set(src, dataToSet)
+  SetIndexedDB(src, dataToSet)
 }
 
 function renderBody(elem: SVGSVGElement, body: string) {
@@ -108,6 +108,6 @@ async function renderIcon(elem: SVGSVGElement) {
 }
 
 document.querySelectorAll<SVGSVGElement>("svg[data-src]")
-.forEach(element => {
+  .forEach(element => {
     renderIcon(element)
-})
+  })

@@ -1,13 +1,70 @@
-var DropZone = <HTMLDivElement>document.querySelector("div[id=DropZone]");
+const dropZone = <HTMLDivElement>document.querySelector("div[id=DropZone]");
 
-if (!(DropZone instanceof HTMLDivElement)) {
-  throw Error("var DropZone is not instanceof HTMLDivElement");
+if (dropZone == null) {
+  throw Error("can't find element with selector: div[id=DropZone]");
 }
 
 var files: File[] = []
 
-// TODO: this is just a mock-up
-DropZone.addEventListener("drop", function (ev) {
+function renderFiles(files: File[]) {
+  const fileListElement = <HTMLDivElement>document.querySelector("div[id=file-list]")
+  if (fileListElement == null) {
+    throw Error("cant find element with selector: div[id=file-list]")
+  }
+
+  if (files.length == 0) {
+    fileListElement.setAttribute("hidden", "")
+    return
+  }
+
+  if (fileListElement.hasAttribute("hidden")) {
+    fileListElement.removeAttribute("hidden")
+  }
+  fileListElement.innerHTML = ""
+
+  function buttonListener(e: MouseEvent) {
+    const i = (<HTMLButtonElement>e.target).id
+    files.splice(Number(i), 1)
+    renderFiles(files)
+  }
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i]
+
+    const fileElement = document.createElement("div")
+    fileElement.className = "Box-row d-flex"
+
+    const span1 = document.createElement("span")
+    span1.className = "mr-2"
+    const fileIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg")
+    fileIcon.setAttribute("data-src", "images/file.svg")
+    fileIcon.setAttribute("class", "octicon")
+    renderIcon(fileIcon)
+    span1.appendChild(fileIcon)
+    fileElement.appendChild(span1)
+
+    const span2 = document.createElement("span")
+    span2.className = "flex-auto css-truncate"
+    span2.innerHTML = file.name
+    fileElement.appendChild(span2)
+
+    const button = document.createElement("button")
+    button.setAttribute("type", "submit")
+    button.className = "Link--primary btn-link"
+    const xIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg")
+    xIcon.setAttribute("data-src", "images/x.svg")
+    xIcon.setAttribute("class", "octicon")
+    xIcon.setAttribute("id", i.toString())
+    renderIcon(xIcon)
+    button.appendChild(xIcon)
+    fileElement.appendChild(button)
+    button.addEventListener("click", buttonListener)
+
+    fileListElement.appendChild(fileElement)
+  }
+}
+
+dropZone.addEventListener("drop", function (ev) {
   // Prevent file from being opened
   ev.preventDefault();
 
@@ -16,18 +73,18 @@ DropZone.addEventListener("drop", function (ev) {
   }
 
   // Use DataTransferItemList interface to access the file(s)
-  let items = ev.dataTransfer.items
+  const items = ev.dataTransfer.items
   for (let i = 0; i < items.length; i++) {
     var item = items[i].webkitGetAsEntry()
     if (item == null) {
-        throw Error("func webkitGetAsEntry return null");
-      }
-      scanFiles(item);
+      throw Error("func webkitGetAsEntry return null");
+    }
+    scanFiles(item);
   }
 
   function scanFiles(item: FileSystemEntry) {
     if (item.isDirectory) {
-      let directoryReader = (<FileSystemDirectoryEntry>item).createReader();
+      const directoryReader = (<FileSystemDirectoryEntry>item).createReader();
       directoryReader.readEntries((entries) => {
         entries.forEach((entry) => {
           scanFiles(entry);
@@ -35,48 +92,78 @@ DropZone.addEventListener("drop", function (ev) {
       });
     } else if (item.isFile) {
       (<FileSystemFileEntry>item).file(function (file) {
-        let fileListElement = <HTMLDivElement> document.querySelector("div[id=file-list]")
-        if (fileListElement == null) {
-            throw Error("let fileList is null")
+        if (file.type != "application/pdf") {
+          return
         }
-        if (fileListElement.hasAttribute("hidden")) {
-            fileListElement.removeAttribute("hidden")
-        }
+
         files.push(file)
-        let fileElement = document.createElement("div")
-        fileElement.className = "Box-row d-flex"
 
-        let span1 = document.createElement("span")
-        span1.className = "mr-2"
-        let fileIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg")
-        fileIcon.setAttribute("data-src", "images/file.svg")
-        fileIcon.setAttribute("class", "octicon")
-        renderIcon(fileIcon)
-        span1.appendChild(fileIcon)
-        fileElement.appendChild(span1)
-
-        let span2 = document.createElement("span")
-        span2.className = "flex-auto css-truncate"
-        span2.innerHTML = file.name
-        fileElement.appendChild(span2)
-
-        let button = document.createElement("button")
-        button.setAttribute("type", "submit")
-        button.className = "Link--primary btn-link"
-        let xIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg")
-        xIcon.setAttribute("data-src", "images/x.svg")
-        xIcon.setAttribute("class", "octicon")
-        renderIcon(xIcon)
-        button.appendChild(xIcon)
-        fileElement.appendChild(button)
-
-        fileListElement.appendChild(fileElement)
+        renderFiles(files)
       });
     }
   }
 });
 
-DropZone.addEventListener("dragover", function (ev) {
+dropZone.addEventListener("dragover", function (ev) {
   // Prevent file from being opened.
   ev.preventDefault();
 });
+
+const inputFilesElement = <HTMLInputElement>document.querySelector("input[type='file'][id='files']")
+
+if (inputFilesElement == null) {
+  throw Error("can't find element with selector: input[type='file'][id='files']")
+}
+
+inputFilesElement.addEventListener("change", (ev) => {
+  const fileList = (<HTMLInputElement>ev.target).files
+  if (fileList == null) {
+    throw Error("FileList object is null")
+  }
+  for (let i = 0; i < fileList.length; i++) {
+    files.push(fileList[i])
+  }
+  (<HTMLInputElement>ev.target).value = "";
+  renderFiles(files)
+})
+
+const buttonUploadElement = <HTMLButtonElement>document.querySelector("button[id='/parser']")
+
+buttonUploadElement.addEventListener("click", () => {
+  if (files.length == 0) {
+    throw Error("Files can't be empty")
+  }
+
+  const parseToTableElement = <HTMLInputElement>document.querySelector("input[type='checkbox'][name='ParseToTable']")
+  if (parseToTableElement == null) {
+    throw Error("can't find element with selector: input[type='checkbox'][name='ParseToTable']")
+  }
+  
+  const groupByAccountElement = <HTMLInputElement>document.querySelector("input[type='checkbox'][name='GroupByAccount']")
+  if (groupByAccountElement == null) {
+    throw Error("can't find element with selector: input[type='checkbox'][name='GroupByAccount']")
+  }
+
+  const summaryByAccountElement = <HTMLInputElement>document.querySelector("input[type='checkbox'][name='SummaryByAccount']")
+  if (summaryByAccountElement == null) {
+    throw Error("can't find element with selector: input[type='checkbox'][name='SummaryByAccount']")
+  }
+
+  if (!(parseToTableElement.checked || groupByAccountElement.checked || summaryByAccountElement.checked)) {
+    throw Error("OPTIONS can't be empty")
+  }
+
+  const formData = new FormData();
+  formData.append("ParseToTable", parseToTableElement.checked ? "true" : "")
+  formData.append("GroupByAccount", groupByAccountElement.checked ? "true" : "")
+  formData.append("SummaryByAccount", summaryByAccountElement.checked ? "true" : "")
+  files.forEach((file) => {
+    formData.append("Files", file)
+  })
+
+  fetch("/parser", {
+    method: "POST",
+    body: formData
+  }).then((response) => response.json())
+  .then((json) => console.log(json))
+})

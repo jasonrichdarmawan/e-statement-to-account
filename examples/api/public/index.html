@@ -29,52 +29,41 @@
 
     <div>
         <div id="DropZone" class="Box blankslate-spacious text-align-center">
-            <form action="/e-statement-to-account" enctype="multipart/form-data" method="post">
-                <h2>Drag files here to process them</h2>
-                <p>
-                    Or
-                    <label for="e-statement">
-                        <input type="file" id="e-statement" accept=".pdf" multiple />
-                        choose your files
-                    </label>
-                </p>
-            </form>
+            <h2>Drag files here to process them</h2>
+            <p>
+                Or
+                <label for="files">
+                    <input type="file" id="files" accept=".pdf" multiple />
+                    choose your files
+                </label>
+            </p>
         </div>
-        
-        <div class="Box mb-3" id="file-list">
-            <div class="Box-row d-flex">
-                <span class="mr-2">
-                    <svg data-src="images/file.svg" class="octicon"></svg>
-                </span>
-                <span class="flex-auto css-truncate">Glovil-1-1.jpeg</span>
-                <button type="submit" class="Link--primary btn-link">
-                    <svg data-src="images/x.svg" class="octicon"></svg>
-                </button>
-            </div>
+
+        <div class="Box mb-3" id="file-list" hidden>
         </div>
 
         <div class="Box p-3">
             <h3>Process files</h3>
-            
+
             <div class="form-group">
                 <label class="container text-normal">Export transactions in tabular format.
-                    <input type="checkbox" checked>
+                    <input type="checkbox" name="ParseToTable" checked>
                     <span class="checkmark"></span>
                 </label>
-    
+
                 <label class="container text-normal">Group transactions into accounts.
-                    <input type="checkbox">
+                    <input type="checkbox" name="GroupByAccount">
                     <span class="checkmark"></span>
                 </label>
-    
+
                 <label class="container text-normal">Export account summary.
-                    <input type="checkbox">
+                    <input type="checkbox" name="SummaryByAccount">
                     <span class="checkmark"></span>
                 </label>
             </div>
         </div>
 
-        <button type="submit" class="btn btn-primary">Process files</button>
+        <button type="submit" id="/parser" class="btn btn-primary">Process files</button>
         <label class="btn btn-danger">Cancel</label>
     </div>
 

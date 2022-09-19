@@ -35,15 +35,15 @@ h3 {
     font-weight: 600;
 }
 
-input[id=e-statement] {
+input[id=files] {
     display: none;
 }
 
-label[for=e-statement] {
+label[for=files] {
     color: var(--color-accent-fg);
 }
 
-label:hover[for=e-statement] {
+label:hover[for=files] {
     text-decoration: underline;
     cursor: pointer;
 }
