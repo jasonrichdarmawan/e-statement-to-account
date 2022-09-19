@@ -132,22 +132,21 @@ function RenderGroupedByAccount(response: ParserResponse) {
 
     panelElement.innerHTML = ""
 
+    const tableElement = document.createElement("table")
+    
     for (let x = 0; x < response.Accounts.AccountNames.length; x++) {
-        const tableElement = document.createElement("table")
 
-        const tHeadElement = tableElement.createTHead()
-        const tHeadRow1Element = tHeadElement.insertRow()
+        const tHeadRow1Element = tableElement.appendChild(document.createElement("tr"))
         tHeadRow1Element.insertCell().outerHTML = `<th colspan="3">${atob(response.Accounts.AccountNames[x])}</th>`
-        const tHeadRow2Element = tHeadElement.insertRow()
+        const tHeadRow2Element = tableElement.appendChild(document.createElement("tr"))
         tHeadRow2Element.insertCell().outerHTML = "<th>TANGGAL</th>"
         tHeadRow2Element.insertCell().outerHTML = "<th>KETERANGAN</th>"
         tHeadRow2Element.insertCell().outerHTML = "<th>MUTASI</th>"
 
-        const tBodyElement = tableElement.createTBody()
         for (let y = 0; y < response.Accounts.Transactions[x].length; y++) {
             const transaction = response.Accounts.Transactions[x][y]
 
-            const tBodyRow1Element = tBodyElement.insertRow()
+            const tBodyRow1Element = tableElement.appendChild(document.createElement("tr"))
             tBodyRow1Element.insertCell().innerHTML = atob(transaction.Date)
             if (transaction.Description2 !== null) {
                 tBodyRow1Element.insertCell().innerHTML = atob(transaction.Description2)
@@ -158,6 +157,13 @@ function RenderGroupedByAccount(response: ParserResponse) {
             const entry = transaction.Entry === null ? "" : ` ${atob(transaction.Entry)}`
             tBodyRow1Element.insertCell().innerHTML = mutasi + entry
         }
+
+        console.log(atob(response.Accounts.AccountNames[x]))
+        
+        const tFootRow1Element = tableElement.appendChild(document.createElement("tr"))
+        tFootRow1Element.insertCell()
+        tFootRow1Element.insertCell().outerHTML = "<td><b>TOTAL</b></td>"
+        tFootRow1Element.insertCell().outerHTML = `<td><b>${Number(response.Accounts.Balances[x]).toLocaleString()}</b></td>`
 
         panelElement.appendChild(tableElement)
     }
