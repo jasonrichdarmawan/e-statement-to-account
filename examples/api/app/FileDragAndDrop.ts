@@ -64,6 +64,16 @@ function renderFiles(files: File[]) {
   }
 }
 
+function pushFiles(file: File): string | null {
+  for (let i = 0; i < files.length; i++) {
+    if (files[i].name === file.name) {
+      return "file exist";
+    }
+  }
+  files.push(file)
+  return null;
+}
+
 dropZone.addEventListener("drop", function (ev) {
   // Prevent file from being opened
   ev.preventDefault();
@@ -96,7 +106,7 @@ dropZone.addEventListener("drop", function (ev) {
           return
         }
 
-        files.push(file)
+        pushFiles(file)
 
         renderFiles(files)
       });
@@ -120,11 +130,15 @@ inputFilesElement.addEventListener("change", (ev) => {
   if (fileList == null) {
     throw Error("FileList object is null")
   }
+  console.log(fileList.length)
   for (let i = 0; i < fileList.length; i++) {
-    files.push(fileList[i])
+    let err = pushFiles(fileList[i])
+    if (err != null) {
+      continue;
+    }
+    renderFiles(files);
   }
   (<HTMLInputElement>ev.target).value = "";
-  renderFiles(files)
 })
 
 const buttonUploadElement = <HTMLButtonElement>document.querySelector("button[id='/parser']")
