@@ -180,3 +180,16 @@ buttonUploadElement.addEventListener("click", () => {
       }
     })
 })
+
+const cancelElement = <HTMLLabelElement> document.querySelector("label[id='cancelparser']")
+
+if (cancelElement == null) {
+  throw Error("element can't be null")
+}
+
+cancelElement.addEventListener("click", () => {
+  files = []
+  renderFiles(files)
+
+  CleanAllRender()
+})
