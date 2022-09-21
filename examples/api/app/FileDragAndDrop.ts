@@ -130,7 +130,6 @@ inputFilesElement.addEventListener("change", (ev) => {
   if (fileList == null) {
     throw Error("FileList object is null")
   }
-  console.log(fileList.length)
   for (let i = 0; i < fileList.length; i++) {
     let err = pushFiles(fileList[i])
     if (err != null) {
