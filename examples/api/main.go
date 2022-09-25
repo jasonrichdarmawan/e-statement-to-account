@@ -23,11 +23,9 @@ var (
 	hostname    = flag.String("hostname", "", "This is used by autocert, controls which domains the Manager will attempt to retrieve new certificates for.")
 )
 
-func init() {
-	flag.Parse()
-}
-
 func main() {
+	flag.Parse()
+
 	h := makeHTTPServer()
 
 	if *environment == "production" {
