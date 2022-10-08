@@ -48,7 +48,7 @@ func main() {
 			log.Printf("Starting HTTPS Server on port %s\n", hs.Addr)
 			err := hs.ListenAndServeTLS("", "")
 			if err != nil {
-				log.Panic(err)
+				log.Fatal(err)
 			}
 		}()
 
@@ -71,7 +71,7 @@ func main() {
 }
 
 func makeHTTPServer() *http.Server {
-	mux := &http.ServeMux{}
+	mux := http.NewServeMux()
 	mux.Handle("/", http.FileServer(http.Dir("./public")))
 	mux.HandleFunc("/parser", parserHandler)
 	return makeHTTPServerWithMux(mux)
@@ -90,7 +90,7 @@ func makeHTTPServerWithMux(mux *http.ServeMux) *http.Server {
 }
 
 func makeHTTPServerRedirectToHTTPS() *http.Server {
-	mux := &http.ServeMux{}
+	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		// TODO: vulnerability test
 		newURI := "https://" + r.Host + r.URL.String()

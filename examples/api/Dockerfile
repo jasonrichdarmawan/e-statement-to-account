@@ -3,7 +3,7 @@
 ## Build
 # Alpine is chosen for its small footprint
 # compared to Ubuntu
-FROM golang:1.19-alpine AS stage1
+FROM golang:1.19-alpine3.16 AS stage1
 
 WORKDIR /app
 
@@ -33,6 +33,8 @@ FROM alpine:3.16 AS stage3
 WORKDIR /
 
 RUN apk add poppler-utils
+
+RUN apk add --no-cache ca-certificates
 
 RUN adduser \
     -h "/dev/null" \
